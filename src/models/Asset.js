@@ -11,8 +11,7 @@ class Asset {
 
     async initializeSprite() {
         const texture = await Assets.load(this.texturePath);
-        texture.source.scaleMode = 'linear';
-        texture.resolution = 2;
+        texture.scaleMode = 'linear';
         this.sprite = new Sprite(texture);
         
         this.sprite.scale.set(0.2);
@@ -25,10 +24,10 @@ class Asset {
         this.sprite.interactive = true;
         this.sprite.dragging = false;
         this.sprite.startPosition = { x: 0, y: 0 };
-        
+
         this.dragListeners = {
             mousedown: (event) => {
-                this.sprite.dragging = true;    
+                this.sprite.dragging = true;
                 this.sprite.startPosition = { x: this.sprite.x, y: this.sprite.y };
             },
             mousemove: (event) => {
@@ -59,12 +58,12 @@ class Asset {
     }
 
     makePlayable() {
-        
+
         this.sprite.off('mousedown', this.dragListeners.mousedown);
         this.sprite.off('mousemove', this.dragListeners.mousemove);
         this.sprite.off('mouseup', this.dragListeners.mouseup);
 
-       
+
         this.sprite.interactive = true;
         this.sprite.cursor = 'pointer';
         this.sprite.on('mousedown', () => {

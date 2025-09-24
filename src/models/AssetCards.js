@@ -9,10 +9,10 @@ class AssetCards {
     }
 
     initializeDeck() {
-        this.cardTemplates.push({gold: 1, silver: 2, texturePath: "./images/patentFront.jpg"});
+        this.cardTemplates.push({gold: 1, silver: 2, texturePath: "./images/patentFront-Copy.jpg"});
 
-        this.cardTemplates.push({gold: 5, silver: 1, texturePath: "./images/pilotPlantFront.jpg"});
-        this.cardTemplates.push({gold: 3, silver: 3, texturePath: "./images/wasteManagmentFront.jpg"});
+        this.cardTemplates.push({gold: 5, silver: 1, texturePath: "./images/pilotPlantFront-Copy.jpg"});
+        this.cardTemplates.push({gold: 3, silver: 3, texturePath: "./images/wasteManagmentFront-Copy.jpg"});
     }
 
     async initializeAllSprites() {

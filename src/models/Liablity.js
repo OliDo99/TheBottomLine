@@ -23,7 +23,7 @@ class Liablity {
         this.sprite.interactive = true;
         this.sprite.dragging = false;
         this.sprite.startPosition = { x: 0, y: 0 };
-        
+
         this.dragListeners = {
             mousedown: (event) => {
                 this.sprite.dragging = true;
@@ -78,6 +78,6 @@ class Liablity {
         }
     }
 
-}   
+}
 
 export default Liablity;
