@@ -19,6 +19,7 @@ class Player {
         this.tempHand = []; 
         this.maxTempCards = 3;
         this.maxKeepCards = 2;
+        
     }
 
     positionCardsInHand() {
