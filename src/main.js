@@ -1,15 +1,18 @@
-import { Application, Text } from "pixi.js";
+import { Application, Text, Assets, Sprite,Container  } from "pixi.js";
 import AssetCards from "./models/AssetCards.js";
 import LiablityCards from "./models/LiablityCards.js";
 import GameManager from "./models/GameManager.js";
 
 (async () => {
     const app = new Application( );
-    await app.init({
-        resizeTo: window,
-        backgroundAlpha: 0.5,
-    });
+    await app.init({ resizeTo: window, backgroundAlpha: 0.5});
+    
     app.canvas.style.position = "absolute";
+
+    document.body.appendChild(app.canvas);
+    const sprites = new Container();
+
+    app.stage.addChild(sprites);
 
     const assetDeck = new AssetCards();
     const liabilityDeck = new LiablityCards();
@@ -23,15 +26,18 @@ import GameManager from "./models/GameManager.js";
 
     const gameManager = new GameManager(app);
     
-    // Add end turn button
-    const endTurnButton = document.createElement('button');
-    endTurnButton.textContent = 'End Turn';
-    endTurnButton.position = 'absolute';
-    endTurnButton.style.right = '20px';
-    endTurnButton.style.top = '20px';
-    
-    endTurnButton.onclick = () => gameManager.nextTurn();
-    document.body.appendChild(endTurnButton);
+    // Add end turn button  
+    const buttonTex = await Assets.load("./images/next.png");
+    const rect = new Sprite(buttonTex);
+    rect.eventMode = 'static';
+    rect.on('pointerdown', () => { gameManager.nextTurn(); });
+    rect.x = window.innerWidth - 100;
+    rect.y = 100;
+    rect.anchor.set(0.5);
+    rect.width = 80;
+    rect.height = 80;
+    sprites.addChild(rect);
+  
 
     // Modify deck click handlers to use current player
     assetDeckSprite.on('mousedown', async () => {
@@ -45,7 +51,7 @@ import GameManager from "./models/GameManager.js";
                 if (cardIndex !== -1) {
                     const wasPlayed = currentPlayer.playAsset(cardIndex);
                     if (wasPlayed) {
-                        app.stage.removeChild(card.sprite);
+                        sprites.removeChild(card.sprite);
                     }
                     gameManager.updateUI();
                 }
@@ -54,7 +60,7 @@ import GameManager from "./models/GameManager.js";
             card.sprite.on('cardDiscarded', (discardedCard) => {
                 const cardIndex = currentPlayer.tempHand.indexOf(discardedCard);
                 if (cardIndex !== -1) {
-                    app.stage.removeChild(discardedCard.sprite);
+                    sprites.removeChild(discardedCard.sprite);
                     currentPlayer.tempHand.splice(cardIndex, 1);
                     
                     currentPlayer.tempHand.forEach(remainingCard => {
@@ -66,7 +72,7 @@ import GameManager from "./models/GameManager.js";
                 }
             });
             currentPlayer.addCardToTempHand(card);
-            app.stage.addChild(card.sprite);
+            sprites.addChild(card.sprite);
             currentPlayer.positionTempCards();       
             
         }
@@ -82,7 +88,7 @@ import GameManager from "./models/GameManager.js";
                 const cardIndex = currentPlayer.hand.indexOf(card);
                 if (cardIndex !== -1) {
                     currentPlayer.playLiability(cardIndex);
-                    app.stage.removeChild(card.sprite); // Remove sprite when played
+                    sprites.removeChild(card.sprite); // Remove sprite when played
                     gameManager.updateUI();
                 }
             });
@@ -90,7 +96,7 @@ import GameManager from "./models/GameManager.js";
             card.sprite.on('cardDiscarded', (discardedCard) => {
                 const cardIndex = currentPlayer.tempHand.indexOf(discardedCard);
                 if (cardIndex !== -1) {
-                    app.stage.removeChild(discardedCard.sprite);
+                    sprites.removeChild(discardedCard.sprite);
                     currentPlayer.tempHand.splice(cardIndex, 1);                    
                     
                     currentPlayer.tempHand.forEach(remainingCard => {
@@ -103,13 +109,13 @@ import GameManager from "./models/GameManager.js";
             });
             
             currentPlayer.addCardToTempHand(card);
-            app.stage.addChild(card.sprite);
+            sprites.addChild(card.sprite);
             currentPlayer.positionTempCards();
         }
     });
 
-    app.stage.addChild(assetDeckSprite);
-    app.stage.addChild(liabilityDeckSprite);
+    sprites.addChild(assetDeckSprite);
+    sprites.addChild(liabilityDeckSprite);
 
     // Initialize starting hands for all players
     for (const player of gameManager.players) {
@@ -126,7 +132,7 @@ import GameManager from "./models/GameManager.js";
                 if (cardIndex !== -1) {
                     const wasPlayed = player.playAsset(cardIndex);
                     if (wasPlayed) {
-                        app.stage.removeChild(asset.sprite);
+                        sprites.removeChild(asset.sprite);
                     }
                     gameManager.updateUI();
                 }
@@ -136,7 +142,7 @@ import GameManager from "./models/GameManager.js";
                 const cardIndex = player.hand.indexOf(liability);
                 if (cardIndex !== -1) {
                     player.playLiability(cardIndex);
-                    app.stage.removeChild(liability.sprite); // Remove sprite when played
+                    sprites.removeChild(liability.sprite); // Remove sprite when played
                     gameManager.updateUI();
                 }
             });
@@ -144,8 +150,8 @@ import GameManager from "./models/GameManager.js";
             player.addCardToHand(asset);
             player.addCardToHand(liability);
             
-            app.stage.addChild(asset.sprite);
-            app.stage.addChild(liability.sprite);
+            sprites.addChild(asset.sprite);
+            sprites.addChild(liability.sprite);
         }
         player.positionCardsInHand();
     }
@@ -162,11 +168,9 @@ import GameManager from "./models/GameManager.js";
     statsText.x = app.renderer.width / 2;
     statsText.y = 50;
     statsText.anchor.set(0.5);
-    app.stage.addChild(statsText);
+    sprites.addChild(statsText);
     gameManager.statsText = statsText;
 
     // Initial UI update
     gameManager.updateUI();
-
-    document.body.appendChild(app.canvas);
 })();

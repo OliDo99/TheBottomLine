@@ -11,12 +11,9 @@ class Asset {
 
     async initializeSprite() {
         const texture = await Assets.load(this.texturePath);
-        texture.source.scaleMode = 'linear';
-        texture.resolution = 2;
+        texture.scaleMode = 'linear';
         this.sprite = new Sprite(texture);
-        
-        this.sprite.width = 70; // find a way to fix
-        this.sprite.height = 100;
+        this.sprite.scale.set(0.4,0.4); // find a way to fix
         this.sprite.anchor.set(0.5);
         this.makeCardDraggable();
     }

@@ -14,7 +14,7 @@ class Player {
         this.silver = 0;
         this.gold = 0;
 
-        this.cardSpacing = 80;
+        this.cardSpacing = 150;
 
         this.tempHand = []; 
         this.maxTempCards = 3;

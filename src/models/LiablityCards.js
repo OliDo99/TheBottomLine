@@ -9,8 +9,8 @@ class LiablityCards {
     }
 
     initializeDeck() {
-        this.cardTemplates.push({gold: 2, rfr: 3, texturePath: "./images/bonds1Front.jpg"});
-        this.cardTemplates.push({gold: 2, rfr: 3, texturePath: "./images/bonds2Front.svg"});
+        this.cardTemplates.push({gold: 1, rfr: 3, texturePath: "./images/bonds1Front.jpg"});
+        this.cardTemplates.push({gold: 2, rfr: 3, texturePath: "./images/bonds2Front.jpg"});
     }
 
     async initializeAllSprites() {
