@@ -15,8 +15,7 @@ class Asset {
         texture.resolution = 2;
         this.sprite = new Sprite(texture);
         
-        this.sprite.width = 70; // find a way to fix
-        this.sprite.height = 100;
+        this.sprite.scale.set(0.2);
         this.sprite.anchor.set(0.5);
         this.makeCardDraggable();
     }

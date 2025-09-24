@@ -4,10 +4,13 @@ import LiablityCards from "./models/LiablityCards.js";
 import GameManager from "./models/GameManager.js";
 
 (async () => {
-    const app = new Application( );
+    const app = new Application();
     await app.init({
         resizeTo: window,
         backgroundAlpha: 0.5,
+        autoDensity: true,
+        antialias: true,
+        resolution: window.devicePixelRatio || 1,
     });
     app.canvas.style.position = "absolute";
 

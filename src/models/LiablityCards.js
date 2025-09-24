@@ -10,7 +10,7 @@ class LiablityCards {
 
     initializeDeck() {
         this.cardTemplates.push({gold: 2, rfr: 3, texturePath: "./images/bonds1Front.jpg"});
-        this.cardTemplates.push({gold: 2, rfr: 3, texturePath: "./images/bonds2Front.svg"});
+        this.cardTemplates.push({gold: 2, rfr: 3, texturePath: "./images/bonds2Front.jpg"});
     }
 
     async initializeAllSprites() {
@@ -27,7 +27,7 @@ class LiablityCards {
         const texture = await Assets.load("./images/liabilityBack.jpg");
 
         this.deckSprite = new Sprite(texture);
-        this.deckSprite.scale.set(0.2, 0.2);
+        this.deckSprite.scale.set(0.2);
         this.deckSprite.anchor.set(0.5);
         this.deckSprite.interactive = true;
         this.deckSprite.cursor = 'pointer';
