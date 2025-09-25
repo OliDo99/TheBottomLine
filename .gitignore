@@ -1,1 +1,4 @@
 node_modules
+bun.lock
+package-lock.json
+.direnv

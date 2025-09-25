@@ -4,9 +4,14 @@ import LiablityCards from "./models/LiablityCards.js";
 import GameManager from "./models/GameManager.js";
 
 (async () => {
-    const app = new Application( );
-    await app.init({ resizeTo: window, backgroundAlpha: 0.5});
-    
+    const app = new Application();
+    await app.init({
+        resizeTo: window,
+        backgroundAlpha: 0.5,
+        autoDensity: true,
+        antialias: true,
+        resolution: window.devicePixelRatio || 1,
+    });
     app.canvas.style.position = "absolute";
 
     document.body.appendChild(app.canvas);
@@ -25,8 +30,8 @@ import GameManager from "./models/GameManager.js";
     liabilityDeck.setDeckPosition(window.innerWidth/2-100, window.innerHeight/2);;
 
     const gameManager = new GameManager(app);
-    
-    // Add end turn button  
+
+    // Add end turn button
     const buttonTex = await Assets.load("./images/next.png");
     const rect = new Sprite(buttonTex);
     rect.eventMode = 'static';
@@ -37,7 +42,7 @@ import GameManager from "./models/GameManager.js";
     rect.width = 80;
     rect.height = 80;
     sprites.addChild(rect);
-  
+
 
     // Modify deck click handlers to use current player
     assetDeckSprite.on('mousedown', async () => {
@@ -45,7 +50,7 @@ import GameManager from "./models/GameManager.js";
         if (currentPlayer.tempHand.length < currentPlayer.maxTempCards) {
             const card = assetDeck.getRandomCard();
             await card.initializeSprite();
-            
+
             card.sprite.on('cardPlayed', () => {
                 const cardIndex = currentPlayer.hand.indexOf(card);
                 if (cardIndex !== -1) {
@@ -62,19 +67,19 @@ import GameManager from "./models/GameManager.js";
                 if (cardIndex !== -1) {
                     sprites.removeChild(discardedCard.sprite);
                     currentPlayer.tempHand.splice(cardIndex, 1);
-                    
+
                     currentPlayer.tempHand.forEach(remainingCard => {
                         currentPlayer.addCardToHand(remainingCard);
                     });
-                    
+
                     currentPlayer.tempHand = [];
                     currentPlayer.positionCardsInHand();
                 }
             });
             currentPlayer.addCardToTempHand(card);
             sprites.addChild(card.sprite);
-            currentPlayer.positionTempCards();       
-            
+            currentPlayer.positionTempCards();
+
         }
     });
 
@@ -83,7 +88,7 @@ import GameManager from "./models/GameManager.js";
         if (currentPlayer.tempHand.length < currentPlayer.maxTempCards) {
             const card = liabilityDeck.getRandomCard();
             await card.initializeSprite();
-            
+
             card.sprite.on('cardPlayed', () => {
                 const cardIndex = currentPlayer.hand.indexOf(card);
                 if (cardIndex !== -1) {
@@ -97,17 +102,17 @@ import GameManager from "./models/GameManager.js";
                 const cardIndex = currentPlayer.tempHand.indexOf(discardedCard);
                 if (cardIndex !== -1) {
                     sprites.removeChild(discardedCard.sprite);
-                    currentPlayer.tempHand.splice(cardIndex, 1);                    
-                    
+                    currentPlayer.tempHand.splice(cardIndex, 1);
+
                     currentPlayer.tempHand.forEach(remainingCard => {
                         currentPlayer.addCardToHand(remainingCard);
-                    });                    
-                   
+                    });
+
                     currentPlayer.tempHand = [];
                     currentPlayer.positionCardsInHand();
                 }
             });
-            
+
             currentPlayer.addCardToTempHand(card);
             sprites.addChild(card.sprite);
             currentPlayer.positionTempCards();
@@ -122,10 +127,10 @@ import GameManager from "./models/GameManager.js";
         for (let i = 0; i < 2; i++) {
             const asset = assetDeck.getRandomCard();
             const liability = liabilityDeck.getRandomCard();
-            
+
             await asset.initializeSprite();
             await liability.initializeSprite();
-            
+
             // Add event listeners for card played events
             asset.sprite.on('cardPlayed', () => {
                 const cardIndex = player.hand.indexOf(asset);
@@ -146,10 +151,10 @@ import GameManager from "./models/GameManager.js";
                     gameManager.updateUI();
                 }
             });
-            
+
             player.addCardToHand(asset);
             player.addCardToHand(liability);
-            
+
             sprites.addChild(asset.sprite);
             sprites.addChild(liability.sprite);
         }

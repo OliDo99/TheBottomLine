@@ -12,7 +12,9 @@ class Liablity {
     async initializeSprite() {
         const texture = await Assets.load(this.texturePath);
         this.sprite = new Sprite(texture);
-        this.sprite.scale.set(0.2,0.2);
+        this.sprite.scale.set(0.2);
+        // this.sprite.width = 70; // find a way to fix
+        // this.sprite.height = 100;
         this.sprite.anchor.set(0.5);
         this.makeCardDraggable();
     }
@@ -21,7 +23,7 @@ class Liablity {
         this.sprite.interactive = true;
         this.sprite.dragging = false;
         this.sprite.startPosition = { x: 0, y: 0 };
-        
+
         this.dragListeners = {
             mousedown: (event) => {
                 this.sprite.dragging = true;
@@ -76,6 +78,6 @@ class Liablity {
         }
     }
 
-}   
+}
 
 export default Liablity;
