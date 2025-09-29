@@ -25,7 +25,7 @@ class Player {
     positionCardsInHand() {
         const startX = (window.innerWidth - (this.hand.length * this.cardSpacing)) / 2 
                         + this.cardSpacing / 2;
-        const y = window.innerHeight - 80; 
+        const y = window.innerHeight - 100; 
 
         this.hand.forEach((card, index) => {
             card.setPosition(
@@ -42,12 +42,12 @@ class Player {
     playLiability(cardIndex) {
         const card = this.hand[cardIndex];
         if (card instanceof Liablity) {
-            // Add gold from the liability
+            
             this.cash += card.gold;
             this.liabilityList.push(card);
-            // Add to liability list
+            
             this.liabilityList.push(card);
-            // Remove from hand
+            
             this.hand.splice(cardIndex, 1);
             this.positionCardsInHand();
             return true;
@@ -57,16 +57,16 @@ class Player {
     playAsset(cardIndex) {
         const card = this.hand[cardIndex];
         if (card instanceof Asset) {
-            // Check if player has enough cash
+            
             if (this.cash >= card.gold) {
-                // Pay the gold cost
+                
                 this.cash -= card.gold;
                 this.gold += card.gold;
-                // Add silver value from the asset
+                
                 this.silver += card.silver;
-                // Add to asset list
+               
                 this.assetList.push(card);
-                // Remove from hand
+                
                 this.hand.splice(cardIndex, 1);
                 this.positionCardsInHand()
                 return true;
@@ -91,14 +91,12 @@ class Player {
             return false;
         }
 
-        // Add selected cards to main hand
         selectedIndices.forEach(index => {
             if (index >= 0 && index < this.tempHand.length) {
                 this.addCardToHand(this.tempHand[index]);
             }
         });
 
-        // Clear temp hand
         this.tempHand = [];
         return true;
     }
@@ -106,7 +104,7 @@ class Player {
     positionTempCards() {
         const startX = (window.innerWidth - (this.tempHand.length * this.cardSpacing)) / 2 
                         + this.cardSpacing / 2;
-        const y = window.innerHeight - 250; // Position above main hand
+        const y = window.innerHeight - 250; 
 
         this.tempHand.forEach((card, index) => {
             card.setPosition(

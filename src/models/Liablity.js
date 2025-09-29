@@ -1,9 +1,9 @@
 import { Assets, Sprite } from 'pixi.js';
 
 class Liablity {
-    constructor(gold, rfr, texturePath) {
+    constructor(title, gold, texturePath) {
+        this.title = title;
         this.gold = gold;
-        this.rfr = rfr;
         this.texturePath = texturePath;
         this.sprite = null;
         this.initializeSprite();
@@ -13,8 +13,8 @@ class Liablity {
         const texture = await Assets.load(this.texturePath);
         this.sprite = new Sprite(texture);
         this.sprite.scale.set(0.2);
-        // this.sprite.width = 70; // find a way to fix
-        // this.sprite.height = 100;
+        //this.sprite.width = 140; 
+        //this.sprite.height = 200;
         this.sprite.anchor.set(0.5);
         this.makeCardDraggable();
     }

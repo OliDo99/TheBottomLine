@@ -1,4 +1,4 @@
-import { Application, Text, Assets, Sprite,Container  } from "pixi.js";
+import { Application, Text, Assets, Sprite, Container  } from "pixi.js";
 import AssetCards from "./models/AssetCards.js";
 import LiablityCards from "./models/LiablityCards.js";
 import GameManager from "./models/GameManager.js";
@@ -10,7 +10,7 @@ import GameManager from "./models/GameManager.js";
         backgroundAlpha: 0.5,
         autoDensity: true,
         antialias: true,
-        resolution: window.devicePixelRatio || 1,
+        resolution: window.devicePixelRatio || 1, 
     });
     app.canvas.style.position = "absolute";
 
@@ -77,7 +77,7 @@ import GameManager from "./models/GameManager.js";
                 }
             });
             currentPlayer.addCardToTempHand(card);
-            sprites.addChild(card.sprite);
+            sprites.addChild(card.sprite)
             currentPlayer.positionTempCards();
 
         }
@@ -93,7 +93,7 @@ import GameManager from "./models/GameManager.js";
                 const cardIndex = currentPlayer.hand.indexOf(card);
                 if (cardIndex !== -1) {
                     currentPlayer.playLiability(cardIndex);
-                    sprites.removeChild(card.sprite); // Remove sprite when played
+                    sprites.removeChild(card.sprite);
                     gameManager.updateUI();
                 }
             });

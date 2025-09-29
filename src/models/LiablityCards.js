@@ -1,5 +1,6 @@
 import { Assets, Sprite } from 'pixi.js';
 import Liablity from './Liablity.js';
+import boardgameData from '../../boardgame.json' assert { type: 'json' };
 
 class LiablityCards {
     constructor() {
@@ -9,8 +10,14 @@ class LiablityCards {
     }
 
     initializeDeck() {
-        this.cardTemplates.push({gold: 1, rfr: 3, texturePath: "./images/bonds1Front.jpg"});
-        this.cardTemplates.push({gold: 2, rfr: 3, texturePath: "./images/bonds2Front.jpg"});
+        const liablityCards = boardgameData.deck_list.liability_deck.card_list;        
+        liablityCards.forEach(card=>{
+            this.cardTemplates.push({
+                title: card.title,
+                gold: card.gold_value,
+                texturePath: card.card_image_url
+            });
+        })  
     }
 
     async initializeAllSprites() {
@@ -20,11 +27,11 @@ class LiablityCards {
     getRandomCard() {
         const randomIndex = Math.floor(Math.random() * this.cardTemplates.length);
         const template = this.cardTemplates[randomIndex];
-        return new Liablity(template.gold, template.rfr, template.texturePath);
+        return new Liablity(template.title, template.gold, template.texturePath);
     }
 
     async initializeDeckSprite() {
-        const texture = await Assets.load("./images/liabilityBack.jpg");
+        const texture = await Assets.load(boardgameData.deck_list.liability_deck.card_image_back_url);
 
         this.deckSprite = new Sprite(texture);
         this.deckSprite.scale.set(0.2);

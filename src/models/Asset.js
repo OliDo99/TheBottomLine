@@ -1,11 +1,14 @@
 import { Assets, Sprite } from 'pixi.js';
 
 class Asset {
-    constructor(gold, silver, texturePath) {
+    constructor(title, color, gold, silver, ability, texturePath) {
+        this.title = title;
+        this.color = color;
         this.gold = gold;
         this.silver = silver;
+        this.ability = ability || null;
         this.texturePath = texturePath;
-        this.sprite = null;
+        this.sprite = null;        
         this.initializeSprite();
     }
 
@@ -14,11 +17,16 @@ class Asset {
         texture.scaleMode = 'linear';
         this.sprite = new Sprite(texture);
         
-        this.sprite.scale.set(0.2);
+        this.sprite.width = 140; 
+        this.sprite.height = 200;
         this.sprite.anchor.set(0.5);
         this.makeCardDraggable();
     }
 
+
+    discardCard(){
+        
+    }
     makeCardDraggable() {
         const DISCARD_THRESHOLD = 150;
         this.sprite.interactive = true;
@@ -58,11 +66,9 @@ class Asset {
     }
 
     makePlayable() {
-
         this.sprite.off('mousedown', this.dragListeners.mousedown);
         this.sprite.off('mousemove', this.dragListeners.mousemove);
         this.sprite.off('mouseup', this.dragListeners.mouseup);
-
 
         this.sprite.interactive = true;
         this.sprite.cursor = 'pointer';

@@ -1,6 +1,6 @@
 import { Assets, Sprite } from 'pixi.js';
 import Asset from './Asset.js';
-
+import boardgameData from '../../boardgame.json' assert { type: 'json' };
 class AssetCards {
     constructor() {
         this.cardTemplates = [];
@@ -9,10 +9,19 @@ class AssetCards {
     }
 
     initializeDeck() {
-        this.cardTemplates.push({gold: 1, silver: 2, texturePath: "./images/patentFront-Copy.jpg"});
-
-        this.cardTemplates.push({gold: 5, silver: 1, texturePath: "./images/pilotPlantFront-Copy.jpg"});
-        this.cardTemplates.push({gold: 3, silver: 3, texturePath: "./images/wasteManagmentFront-Copy.jpg"});
+        const assetCards = boardgameData.deck_list.asset_deck.card_list;        
+        assetCards.forEach(card=>{
+            this.cardTemplates.push({
+                title: card.title,
+                color: card.color,
+                gold: card.gold_value,
+                silver: card.silver_value,
+                ability: card.ability,
+                texturePath: card.card_image_url
+            });
+                
+        })       
+       
     }
 
     async initializeAllSprites() {
@@ -22,11 +31,12 @@ class AssetCards {
     getRandomCard() {
         const randomIndex = Math.floor(Math.random() * this.cardTemplates.length);
         const template = this.cardTemplates[randomIndex];
-        return new Asset(template.gold, template.silver, template.texturePath);
+        return new Asset( template.title, template.color, template.gold, template.silver, template.ability, template.texturePath );
     }
 
     async initializeDeckSprite() {
-        const texture = await Assets.load("./images/assetBack.jpg");
+        const texture = await Assets.load(boardgameData.deck_list.asset_deck.card_image_back_url);
+
         this.deckSprite = new Sprite(texture);
         this.deckSprite.scale.set(0.2);
         this.deckSprite.anchor.set(0.5);
