@@ -26,8 +26,8 @@ import GameManager from "./models/GameManager.js";
     const liabilityDeckSprite = await liabilityDeck.initializeDeckSprite();
 
     //temp pos
-    assetDeck.setDeckPosition(window.innerWidth/2+100, window.innerHeight/2);
-    liabilityDeck.setDeckPosition(window.innerWidth/2-100, window.innerHeight/2);;
+    assetDeck.setDeckPosition(window.innerWidth/2+100, window.innerHeight/2-150);
+    liabilityDeck.setDeckPosition(window.innerWidth/2-100, window.innerHeight/2-150);;
 
     const gameManager = new GameManager(app);
 
@@ -122,7 +122,6 @@ import GameManager from "./models/GameManager.js";
     sprites.addChild(assetDeckSprite);
     sprites.addChild(liabilityDeckSprite);
 
-    // Initialize starting hands for all players
     for (const player of gameManager.players) {
         for (let i = 0; i < 2; i++) {
             const asset = assetDeck.getRandomCard();
@@ -147,7 +146,7 @@ import GameManager from "./models/GameManager.js";
                 const cardIndex = player.hand.indexOf(liability);
                 if (cardIndex !== -1) {
                     player.playLiability(cardIndex);
-                    sprites.removeChild(liability.sprite); // Remove sprite when played
+                    sprites.removeChild(liability.sprite); 
                     gameManager.updateUI();
                 }
             });

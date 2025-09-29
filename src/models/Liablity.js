@@ -13,10 +13,9 @@ class Liablity {
         const texture = await Assets.load(this.texturePath);
         this.sprite = new Sprite(texture);
         this.sprite.scale.set(0.2);
-        //this.sprite.width = 140; 
-        //this.sprite.height = 200;
+
         this.sprite.anchor.set(0.5);
-        this.makeCardDraggable();
+        //this.makeCardDraggable();
     }
     makeCardDraggable() {
         const DISCARD_THRESHOLD = 150;
@@ -58,9 +57,9 @@ class Liablity {
 
     makePlayable() {
         // Remove drag listeners
-        this.sprite.off('mousedown', this.dragListeners.mousedown);
-        this.sprite.off('mousemove', this.dragListeners.mousemove);
-        this.sprite.off('mouseup', this.dragListeners.mouseup);
+        //this.sprite.off('mousedown', this.dragListeners.mousedown);
+        //this.sprite.off('mousemove', this.dragListeners.mousemove);
+        //this.sprite.off('mouseup', this.dragListeners.mouseup);
 
         // Add play functionality
         this.sprite.interactive = true;

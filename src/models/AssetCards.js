@@ -19,7 +19,6 @@ class AssetCards {
                 ability: card.ability,
                 texturePath: card.card_image_url
             });
-                
         })       
        
     }

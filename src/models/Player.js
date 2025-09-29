@@ -14,7 +14,7 @@ class Player {
         this.silver = 0;
         this.gold = 0;
 
-        this.cardSpacing = 150;
+        this.cardSpacing = 120;
 
         this.tempHand = []; 
         this.maxTempCards = 3;
@@ -104,7 +104,7 @@ class Player {
     positionTempCards() {
         const startX = (window.innerWidth - (this.tempHand.length * this.cardSpacing)) / 2 
                         + this.cardSpacing / 2;
-        const y = window.innerHeight - 250; 
+        const y = window.innerHeight - 320; 
 
         this.tempHand.forEach((card, index) => {
             card.setPosition(
