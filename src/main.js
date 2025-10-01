@@ -1,13 +1,11 @@
-import { Application, Text, Assets, Sprite, Container  } from "pixi.js";
-import AssetCards from "./models/AssetCards.js";
-import LiablityCards from "./models/LiablityCards.js";
+import { Application, Text, Assets, Sprite, Container,Graphics } from "pixi.js";
 import GameManager from "./models/GameManager.js";
 
 (async () => {
     const app = new Application();
     await app.init({
         resizeTo: window,
-        backgroundAlpha: 0.5,
+        backgroundColor: 0x4A4A4A,
         autoDensity: true,
         antialias: true,
         resolution: window.devicePixelRatio || 1, 
@@ -19,148 +17,59 @@ import GameManager from "./models/GameManager.js";
 
     app.stage.addChild(sprites);
 
-    const assetDeck = new AssetCards();
-    const liabilityDeck = new LiablityCards();
-
-    const assetDeckSprite = await assetDeck.initializeDeckSprite();
-    const liabilityDeckSprite = await liabilityDeck.initializeDeckSprite();
-
-    //temp pos
-    assetDeck.setDeckPosition(window.innerWidth/2+100, window.innerHeight/2-150);
-    liabilityDeck.setDeckPosition(window.innerWidth/2-100, window.innerHeight/2-150);;
+  
 
     const gameManager = new GameManager(app);
+    const currentPlayer = gameManager.getCurrentPlayer();
+
 
     // Add end turn button
-    const buttonTex = await Assets.load("./images/next.png");
-    const rect = new Sprite(buttonTex);
-    rect.eventMode = 'static';
-    rect.on('pointerdown', () => { gameManager.nextTurn(); });
-    rect.x = window.innerWidth - 100;
-    rect.y = 100;
-    rect.anchor.set(0.5);
-    rect.width = 80;
-    rect.height = 80;
+    /*
+   const rect = new Graphics();
+    rect.fill(0x0000FF);
+    rect.roundRect( 100,window.innerHeight/2, 140, 220, 10);
+    
+    rect.fill();
     sprites.addChild(rect);
-
-
-    // Modify deck click handlers to use current player
-    assetDeckSprite.on('mousedown', async () => {
-        const currentPlayer = gameManager.getCurrentPlayer();
-        if (currentPlayer.tempHand.length < currentPlayer.maxTempCards) {
-            const card = assetDeck.getRandomCard();
-            await card.initializeSprite();
-
-            card.sprite.on('cardPlayed', () => {
-                const cardIndex = currentPlayer.hand.indexOf(card);
-                if (cardIndex !== -1) {
-                    const wasPlayed = currentPlayer.playAsset(cardIndex);
-                    if (wasPlayed) {
-                        sprites.removeChild(card.sprite);
+    */
+    const buttonTex = await Assets.load("./miscellaneous/next.png");
+    const nextButton = new Sprite(buttonTex);
+    nextButton.eventMode = 'static';
+    nextButton.on('pointerdown', () => { 
+        if (gameManager.currentPhase === 'picking') {
+            if (currentPlayer.tempHand.length > 0) {
+                currentPlayer.tempHand.forEach(card => {
+                    currentPlayer.addCardToHand(card);
+                    if (card.discardButton) {
+                        sprites.removeChild(card.discardButton);
                     }
-                    gameManager.updateUI();
-                }
-            });
-
-            card.sprite.on('cardDiscarded', (discardedCard) => {
-                const cardIndex = currentPlayer.tempHand.indexOf(discardedCard);
-                if (cardIndex !== -1) {
-                    sprites.removeChild(discardedCard.sprite);
-                    currentPlayer.tempHand.splice(cardIndex, 1);
-
-                    currentPlayer.tempHand.forEach(remainingCard => {
-                        currentPlayer.addCardToHand(remainingCard);
-                    });
-
-                    currentPlayer.tempHand = [];
-                    currentPlayer.positionCardsInHand();
-                }
-            });
-            currentPlayer.addCardToTempHand(card);
-            sprites.addChild(card.sprite)
-            currentPlayer.positionTempCards();
-
+                });
+                currentPlayer.tempHand = [];
+                currentPlayer.positionCardsInHand();
+                gameManager.switchToMainPhase();
+            }
+        } else {
+            gameManager.nextTurn();
         }
     });
+    nextButton.x = window.innerWidth - 100;
+    nextButton.y = 100;
+    nextButton.anchor.set(0.5);
+    nextButton.width = 80;
+    nextButton.height = 80;
+    gameManager.mainContainer.addChild(nextButton);
 
-    liabilityDeckSprite.on('mousedown', async () => {
-        const currentPlayer = gameManager.getCurrentPlayer();
-        if (currentPlayer.tempHand.length < currentPlayer.maxTempCards) {
-            const card = liabilityDeck.getRandomCard();
-            await card.initializeSprite();
+   const assetDeckSprite = await gameManager.CreateAssetDeck();
+   const liabilityDeckSprite = await gameManager.CreateLiabilityDeck();
 
-            card.sprite.on('cardPlayed', () => {
-                const cardIndex = currentPlayer.hand.indexOf(card);
-                if (cardIndex !== -1) {
-                    currentPlayer.playLiability(cardIndex);
-                    sprites.removeChild(card.sprite);
-                    gameManager.updateUI();
-                }
-            });
 
-            card.sprite.on('cardDiscarded', (discardedCard) => {
-                const cardIndex = currentPlayer.tempHand.indexOf(discardedCard);
-                if (cardIndex !== -1) {
-                    sprites.removeChild(discardedCard.sprite);
-                    currentPlayer.tempHand.splice(cardIndex, 1);
+    
 
-                    currentPlayer.tempHand.forEach(remainingCard => {
-                        currentPlayer.addCardToHand(remainingCard);
-                    });
+    gameManager.pickingContainer.addChild(assetDeckSprite);
+    gameManager.pickingContainer.addChild(liabilityDeckSprite);
 
-                    currentPlayer.tempHand = [];
-                    currentPlayer.positionCardsInHand();
-                }
-            });
+    gameManager.switchToPickingPhase();
 
-            currentPlayer.addCardToTempHand(card);
-            sprites.addChild(card.sprite);
-            currentPlayer.positionTempCards();
-        }
-    });
-
-    sprites.addChild(assetDeckSprite);
-    sprites.addChild(liabilityDeckSprite);
-
-    for (const player of gameManager.players) {
-        for (let i = 0; i < 2; i++) {
-            const asset = assetDeck.getRandomCard();
-            const liability = liabilityDeck.getRandomCard();
-
-            await asset.initializeSprite();
-            await liability.initializeSprite();
-
-            // Add event listeners for card played events
-            asset.sprite.on('cardPlayed', () => {
-                const cardIndex = player.hand.indexOf(asset);
-                if (cardIndex !== -1) {
-                    const wasPlayed = player.playAsset(cardIndex);
-                    if (wasPlayed) {
-                        sprites.removeChild(asset.sprite);
-                    }
-                    gameManager.updateUI();
-                }
-            });
-
-            liability.sprite.on('cardPlayed', () => {
-                const cardIndex = player.hand.indexOf(liability);
-                if (cardIndex !== -1) {
-                    player.playLiability(cardIndex);
-                    sprites.removeChild(liability.sprite); 
-                    gameManager.updateUI();
-                }
-            });
-
-            player.addCardToHand(asset);
-            player.addCardToHand(liability);
-
-            sprites.addChild(asset.sprite);
-            sprites.addChild(liability.sprite);
-        }
-        player.positionCardsInHand();
-    }
-
-    // Create stats display
     const statsText = new Text({
         text: '',
         style: {
@@ -175,6 +84,9 @@ import GameManager from "./models/GameManager.js";
     sprites.addChild(statsText);
     gameManager.statsText = statsText;
 
-    // Initial UI update
+    sprites.addChild(statsText);
+    sprites.addChild(gameManager.pickingContainer);
+    sprites.addChild(gameManager.mainContainer);
+    
     gameManager.updateUI();
 })();

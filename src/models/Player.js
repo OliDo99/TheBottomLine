@@ -3,6 +3,9 @@ import Liablity from './Liablity.js';
 class Player {
     constructor() {
         this.hand = [];
+        this.playableAssets = 1;
+        this.playableLiabilities = 1;
+        this.charakter = null;
 
         this.assetList = [];
         this.cash = 0;
@@ -14,12 +17,13 @@ class Player {
         this.silver = 0;
         this.gold = 0;
 
-        this.cardSpacing = 120;
+        this.cardSpacing = 200;
 
         this.tempHand = []; 
         this.maxTempCards = 3;
         this.maxKeepCards = 2;
-        
+
+        this.skipNextTurn = false;
     }
 
     positionCardsInHand() {
@@ -40,6 +44,9 @@ class Player {
         card.makePlayable(); // Convert card to playable mode
     }
     playLiability(cardIndex) {
+        if (this.playableLiabilities <= 0) {
+            return false;
+        }
         const card = this.hand[cardIndex];
         if (card instanceof Liablity) {
             
@@ -50,11 +57,18 @@ class Player {
             
             this.hand.splice(cardIndex, 1);
             this.positionCardsInHand();
+            this.playableLiabilities--;
+
+            this.moveLiabilityToPile(card);
             return true;
         }
         return false;
     }
     playAsset(cardIndex) {
+        if (this.playableAssets <= 0) {
+            
+            return false;
+        }
         const card = this.hand[cardIndex];
         if (card instanceof Asset) {
             
@@ -69,15 +83,27 @@ class Player {
                 
                 this.hand.splice(cardIndex, 1);
                 this.positionCardsInHand()
+                this.playableAssets--;
+
+
+                this.moveAssetToPile(card);
+
+
                 return true;
             } else {
-                console.log('Not enough cash to play this asset!');
                 return false;
             }
         }
         return false;
     }
-
+    moveAssetToPile(card) {
+        card.sprite.x = 500-(this.assetList.length * 50);
+        card.sprite.y = window.innerHeight/2;
+    }
+    moveLiabilityToPile(card) {
+        card.sprite.x = window.innerWidth-500+(this.assetList.length * 50);
+        card.sprite.y = window.innerHeight/2;
+    }
     addCardToTempHand(card) {
         if (this.tempHand.length < this.maxTempCards) {
             this.tempHand.push(card);
@@ -104,7 +130,7 @@ class Player {
     positionTempCards() {
         const startX = (window.innerWidth - (this.tempHand.length * this.cardSpacing)) / 2 
                         + this.cardSpacing / 2;
-        const y = window.innerHeight - 320; 
+        const y = window.innerHeight/2; 
 
         this.tempHand.forEach((card, index) => {
             card.setPosition(
@@ -112,6 +138,19 @@ class Player {
                 y
             );
         });
+   }
+
+    useCharacterAbility(targetPlayer = null, cardIndex = null, targetCardIndex = null) {
+        if (this.character && !this.character.used) {
+            return this.character.useAbility(this, targetPlayer, cardIndex, targetCardIndex);
+        }
+        return false;
+    }
+
+    resetCharacterAbility() {
+        if (this.character) {
+            this.character.used = false;
+        }
     }
 }
 

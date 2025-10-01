@@ -37,7 +37,7 @@ class AssetCards {
         const texture = await Assets.load(boardgameData.deck_list.asset_deck.card_image_back_url);
 
         this.deckSprite = new Sprite(texture);
-        this.deckSprite.scale.set(0.2);
+        this.deckSprite.scale.set(0.4);
         this.deckSprite.anchor.set(0.5);
         this.deckSprite.interactive = true;
         this.deckSprite.cursor = 'pointer';
