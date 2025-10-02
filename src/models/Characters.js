@@ -1,11 +1,12 @@
 class Character {
-    constructor(name, ability, description) {
+    constructor(name, ability, description, textureName,order) {
         this.name = name;
         this.ability = ability;
         this.description = description;
-        
-        this.texturePath = `./miscellaneous/${name}.webp`;
+        this.texturePath = `./miscellaneous/${textureName}.webp`;
+        this.iconPath = `./miscellaneous/${textureName}Icon.png`;
         this.used = false; 
+        this.order = order;
     }
 
     useActive(player, targetPlayer = null) {
@@ -14,18 +15,18 @@ class Character {
         return true;
     }
     usePassive(player) {
-        player.gold += 1;
-        console.log(`${player.charakter.name}: usePassive`);
-
+        player.cash += 1;
     }
 }
 
 export class Shareholder extends Character {
     constructor() {
         super(
-            "shareholder",
+            "The Shareholder",
             "Skip Master",
-            "Can choose a character and skip their turn"
+            "Can choose a character and skip their turn",
+            "shareholder",
+            1
         );
     }
 
@@ -42,9 +43,11 @@ export class Shareholder extends Character {
 export class Banker extends Character {
     constructor() {
         super(
-            "banker",
+            "The Banker",
             "Fanum Tax",
-            "Takes gold from a player based on their asset colors"
+            "Takes gold from a player based on their asset colors",
+            "banker",
+            2
         );
     }
 
@@ -64,9 +67,11 @@ export class Banker extends Character {
 export class Regulator extends Character {
     constructor() {
         super(
-            "regulator",
+            "The Regulator",
             "Card Swap",
-            "Can swap cards with another player"
+            "Can swap cards with another player",
+            "regulator",
+            3
         );
     }
 
@@ -87,9 +92,11 @@ export class Regulator extends Character {
 export class CEO extends Character {
     constructor() {
         super(
-            "ceo",
+            "The Chief Executive Officer",
             "Asset Master",
-            "Starts with 3 playable assets per turn"
+            "Starts with 3 playable assets per turn",
+            "ceo",
+            4
         );
     }
 
@@ -115,9 +122,11 @@ export class CEO extends Character {
 export class CFO extends Character {
     constructor() {
         super(
-            "cfo",
+            "The Chief Financial Officer",
             "Liability Master",
-            "Starts with 3 playable liabilities per turn"
+            "Starts with 3 playable liabilities per turn",
+            "cfo",
+            5
         );
     }
 
@@ -138,9 +147,11 @@ export class CFO extends Character {
 export class CSO extends Character {
     constructor() {
         super(
-            "cso",
+            "The Chief Sustainablity Officer",
             "Strategic Master",
-            "You can buy up to two assets if they are green or red"
+            "You can buy up to two assets if they are green or red",
+            "cso",
+            6
         );
     }   
 
@@ -160,9 +171,11 @@ export class CSO extends Character {
 export class HeadOfRD extends Character {
     constructor() {
         super(
-            "headOfR&D",
+            "The Head of R&D",
             "Research Master",
-            "Starts with increased card draw and keep limit"
+            "Starts with increased card draw and keep limit",
+            "headOfR&D",
+            7
         );
     }
 
@@ -184,9 +197,11 @@ export class HeadOfRD extends Character {
 export class Stakeholder extends Character {
     constructor() {
         super(
-            "stakeholder",
+            "The Stakeholder",
             "Forced Sale",
-            "Can force a player to sell an asset"
+            "Can force a player to sell an asset",
+            "stakeholder",
+            8
         );
     }
 

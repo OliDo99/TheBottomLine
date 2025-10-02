@@ -24,6 +24,7 @@ class Player {
         this.maxKeepCards = 2;
 
         this.skipNextTurn = false;
+        this.reveal = false;
     }
 
     positionCardsInHand() {
@@ -66,7 +67,6 @@ class Player {
     }
     playAsset(cardIndex) {
         if (this.playableAssets <= 0) {
-            
             return false;
         }
         const card = this.hand[cardIndex];
@@ -87,7 +87,6 @@ class Player {
 
 
                 this.moveAssetToPile(card);
-
 
                 return true;
             } else {
