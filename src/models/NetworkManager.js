@@ -16,7 +16,6 @@ class NetworkManager {
 
             this.flushQueue(); 
         });
-        crash();
     }
 
     flushQueue() {
