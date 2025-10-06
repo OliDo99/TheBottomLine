@@ -1,5 +1,6 @@
 import { Application, Text, Assets, Sprite, Container } from "pixi.js";
 import GameManager from "./models/GameManager.js";
+import NetworkManager from "./models/NetworkManager.js";
 
 (async () => {
     const app = new Application();
@@ -45,7 +46,8 @@ import GameManager from "./models/GameManager.js";
     sprites.addChild(gameManager.mainContainer);
     sprites.addChild(gameManager.elseTurnContainer);
     
-    
+    const nw = new NetworkManager('ws://localhost:3000/websocket');
+
     gameManager.updateUI();
 })();
 
