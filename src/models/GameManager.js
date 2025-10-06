@@ -13,13 +13,24 @@ class GameManager {
         this.players = [];
         this.currentPlayerIndex = 0;
         this.numPlayers = 4;
+        this.myIndex = 0;
         this.charakters = getAllCharacters();
+
+        this.characterSprites = [];
+        this.characterSpriteMap = new Map(); 
+        this.shuffledCharacters = [];
+        this.faceUpCards = [];     
+        this.faceDownCards = [];    
+        this.characterDraftingPlayerIndex = 0;
+        this.currentDraftChoices = [];
+
         this.initializePlayers();
         this.currentPhase = 'picking'; 
         this.mainContainer = new Container();
         this.pickingContainer = new Container();
         this.chacacterContainer = new Container();
         this.elseTurnContainer = new Container();
+        this.draftOverlay = new Graphics();
         this.statsText = new Text({
         text: '',
         style: {
@@ -33,28 +44,23 @@ class GameManager {
     initializePlayers() {
         for (let i = 0; i < this.numPlayers; i++) {
             const player = new Player();
-            player.charakter = this.charakters[i];
+            // Characters will be assigned during the draft, not here.
             player.cash = 1; 
             this.players.push(player);
         }
     }
     async startGame(){
-        await this.GrabCharacters();
+        // 1. Prepare all game assets and sprites
+        await this.GrabCharacters(); // This creates the character sprites
         await this.CreateAssetDeck();
         await this.CreateLiabilityDeck();
         await this.nextButton(this.mainContainer);
-        await this.otherCards();
         await this.GiveStartHand();
         
-        await this.showAssetData(this.mainContainer);
-        await this.showCharacterData(this.mainContainer);
-
-        const currentPlayer = this.players[this.currentPlayerIndex];
-        currentPlayer.charakter.usePassive(currentPlayer);
-        currentPlayer.reveal = true;
-        
-        this.switchToPickingPhase(); 
+        // 2. Start the game with the first round's character draft
+        this.newRound();
     }
+    
 
     getCurrentPlayer() {
         return this.players[this.currentPlayerIndex];
@@ -64,14 +70,18 @@ class GameManager {
         this.chacacterContainer.visible  = false;
         this.mainContainer.visible = false;
         this.currentPhase = 'picking'; 
-        if (this.currentPlayerIndex ==0){
+        if (this.currentPlayerIndex == this.myIndex){
             this.pickingContainer.visible = true;
             this.elseTurnContainer.visible = false;
+             this.showAssetData(this.mainContainer);
+            this.showCharacterData(this.mainContainer);
         }
         else{
             this.otherCards();
             this.elseTurnContainer.visible = true;
             this.pickingContainer.visible = false;
+            this.showAssetData(this.elseTurnContainer);
+            this.showCharacterData(this.elseTurnContainer);
         }
         this.updateUI();
         
@@ -82,13 +92,27 @@ class GameManager {
         this.mainContainer.visible = true;
         this.pickingContainer.visible = false;
         this.chacacterContainer.visible  = false;
+        this.elseTurnContainer.visible = false;
         this.updateUI();
     }
     switchToCharacterPhase() {
         this.currentPhase = 'character';
+        this.chacacterContainer.visible = true;
         this.mainContainer.visible = false;
         this.pickingContainer.visible = false;
-        this.chacacterContainer.visible  = true;
+        this.elseTurnContainer.visible = false;
+        
+        
+        this.characterChoosingPlayerIndex = 0;
+        this.availableCharacters = [...this.charakters];
+
+        
+        this.characterSprites.forEach(sprite => {
+            sprite.eventMode = 'static';
+            sprite.alpha = 1.0;
+        });
+
+        this.statsText.text = `Player ${this.characterChoosingPlayerIndex + 1}, choose your character!`;
         this.updateUI();
     }
     nextTurn() {
@@ -96,6 +120,10 @@ class GameManager {
         const sortedPlayers = [...this.players].sort((a, b) => a.charakter.order - b.charakter.order);
         const lastPlayer = this.players[this.currentPlayerIndex];
         const lastPlayerSortedIndex = lastPlayer ? sortedPlayers.indexOf(lastPlayer) : -1;
+        if (this.currentPlayerIndex == this.players.length -1) {
+            this.newRound();
+            return;
+        }
 
         const nextPlayerSortedIndex = (lastPlayerSortedIndex + 1) % sortedPlayers.length;
         const nextPlayer = sortedPlayers[nextPlayerSortedIndex];
@@ -110,17 +138,33 @@ class GameManager {
         currentPlayer.charakter.usePassive(currentPlayer);
         this.switchToPickingPhase();        
     }
+    newRound() {
+        this.currentPhase = 'character_draft';
+        this.chacacterContainer.visible = true;
+        this.mainContainer.visible = false;
+        this.pickingContainer.visible = false;
+        this.elseTurnContainer.visible = false;
+        
+        // Dim the background to focus on the choice
+        this.draftOverlay.clear().rect(0, 0, this.app.screen.width, this.app.screen.height).fill({ color: 0x000000, alpha: 0.7 });
+        this.chacacterContainer.addChildAt(this.draftOverlay, 0);
+        this.draftOverlay.visible = true;
 
+        this.players.forEach(p => {
+            p.charakter = null;
+            p.reveal = false;
+        });
+
+        this.setupCharacterDraft();
+    }
     updateUI() {
-        // The drawing functions are removed from here
         const currentPlayer = this.getCurrentPlayer();
         
         if (this.currentPhase == 'picking') {
             this.statsText.text = `${currentPlayer.charakter.name} is picking cards`;
         } else if(this.currentPhase == "main"){
             this.statsText.text = `${currentPlayer.charakter.name} is playing | ${currentPlayer.cash}`;
-        }
-        else if(this.currentPhase == "character"){
+        } else if(this.currentPhase == "character"){
             this.statsText.text = `Chose a character`;
         }
         
@@ -145,6 +189,7 @@ class GameManager {
         currentPlayer.liabilityList.forEach(card => {
             if (card.sprite) card.sprite.visible = true;
         });
+        
     }
     async CreateAssetDeck() {
         const assetDeck = new AssetCards();
@@ -263,7 +308,7 @@ class GameManager {
         return liabilityDeckSprite;
     }
     
-    async showAssetData(container)
+    showAssetData(container)
     {
         this.players.forEach(async player => {
             let texture;
@@ -297,7 +342,7 @@ class GameManager {
             });
         }); 
     }
-    async showCharacterData(container)
+    showCharacterData(container)
     {
         this.players.forEach(async player => {
             let texture;
@@ -351,28 +396,114 @@ class GameManager {
         container.addChild(nextButton);
     }
     async GrabCharacters(){
-        this.charakters.forEach(async character =>{
+        for (const character of this.charakters) {
             let texture = await Assets.load(character.texturePath);
             let sprite = new Sprite(texture);
             sprite.scale.set(0.3);
-            sprite.anchor.set(0.5)
-           
-            sprite.position.x =  this.charakters.indexOf(character)*190 +110; 
-            sprite.position.y = window.innerHeight/2;
+            sprite.anchor.set(0.5);
+            
+            sprite.visible = false; // All sprites are hidden initially
+            
+    
+            sprite.on('pointerdown', () => this.handleCharacterDraftPick(character));
 
             this.chacacterContainer.addChild(sprite);
-            console.log(character.name);
+            this.characterSprites.push(sprite);
+            this.characterSpriteMap.set(character, sprite);
+        }
+    }
+    setupCharacterDraft() {
+        this.shuffledCharacters = [...this.charakters].sort(() => 0.5 - Math.random());
+        this.faceUpCards = [];
+        this.faceDownCards = [];
 
+        let numFaceUp = 0;
+        if (this.numPlayers === 4) numFaceUp = 2;
+        else if (this.numPlayers === 5) numFaceUp = 1;
+
+        for (let i = 0; i < numFaceUp; i++) {
+            this.faceUpCards.push(this.shuffledCharacters.pop());
+        }
+        
+        const faceUpSpacing = 190;
+        const faceUpStartX = (this.app.screen.width - (this.faceUpCards.length - 1) * faceUpSpacing) / 2;
+        this.faceUpCards.forEach((card, i) => {
+            const sprite = this.characterSpriteMap.get(card);
+            if (sprite) {
+                sprite.position.set(faceUpStartX + i * faceUpSpacing, 180);
+                sprite.visible = true;
+                sprite.alpha = 0.6;
+                sprite.eventMode = 'none';
+            }
         });
+
+        this.faceDownCards = [...this.shuffledCharacters];
+        this.characterDraftingPlayerIndex = 0;
+        this.presentCharacterDraftChoice();
+    }
+    presentCharacterDraftChoice() {
+        this.characterSpriteMap.forEach(sprite => sprite.visible = false);
+        this.faceUpCards.forEach(card => {
+            const sprite = this.characterSpriteMap.get(card);
+            if(sprite) sprite.visible = true;
+        });
+
+        const currentPlayerIndex = this.characterDraftingPlayerIndex;
+        this.currentDraftChoices = [...this.faceDownCards];
+        this.statsText.text = `Player ${currentPlayerIndex + 1}, choose your character!`;
+        
+        const spacing = 190;
+        const startX = (this.app.screen.width - (this.currentDraftChoices.length - 1) * spacing) / 2;
+        
+        this.currentDraftChoices.forEach((card, i) => {
+            const sprite = this.characterSpriteMap.get(card);
+            if (sprite) {
+                sprite.position.set(startX + i * spacing, this.app.screen.height / 2 + 100);
+                sprite.visible = true;
+                sprite.eventMode = 'static';
+                sprite.cursor = 'pointer';
+                sprite.alpha = 1.0;
+            }
+        });
+    }
+     handleCharacterDraftPick(chosenCharacter) {
+        const currentPlayerIndex = this.characterDraftingPlayerIndex;
+        this.players[currentPlayerIndex].charakter = chosenCharacter;
+        this.faceDownCards = this.faceDownCards.filter(c => c !== chosenCharacter);
+
+        this.currentDraftChoices.forEach(card => {
+            const sprite = this.characterSpriteMap.get(card);
+            if (sprite) sprite.eventMode = 'none';
+        });
+
+        this.characterDraftingPlayerIndex++;
+
+        if (this.characterDraftingPlayerIndex >= this.numPlayers) {
+            this.finalizeRound();
+        } else {
+            this.presentCharacterDraftChoice();
+        }
+    }
+    finalizeRound() {
+        this.statsText.text = "Round starting!";
+        this.draftOverlay.visible = false;
+        this.characterSpriteMap.forEach(sprite => sprite.visible = false);
+
+        this.players.sort((a, b) => a.charakter.order - b.charakter.order);
+        
+        this.currentPlayerIndex = 0;
+        const currentPlayer = this.getCurrentPlayer();
+        currentPlayer.reveal = true;
+        currentPlayer.charakter.usePassive(currentPlayer);
+
+        this.switchToPickingPhase();
     }
      async otherCards(){
         this.elseTurnContainer.removeChildren();
         
         const currentPlayer = this.getCurrentPlayer();
 
-        await this.showAssetData(this.elseTurnContainer);
-        await this.showCharacterData(this.elseTurnContainer);
-        
+       
         
         const buttonTex = await Assets.load("./miscellaneous/next.png");
         const nextButton = new Sprite(buttonTex);
