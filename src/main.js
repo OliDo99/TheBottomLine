@@ -43,6 +43,7 @@ import GameManager from "./models/GameManager.js";
     sprites.addChild(gameManager.chacacterContainer);
     sprites.addChild(gameManager.pickingContainer);
     sprites.addChild(gameManager.mainContainer);
+    sprites.addChild(gameManager.elseTurnContainer);
     
     
     gameManager.updateUI();
