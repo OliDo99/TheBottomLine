@@ -13,8 +13,8 @@ class GameManager {
         this.players = [];
         this.currentPlayerIndex = 0;
         this.numPlayers = 4;
-        this.myIndex = 0;
-        this.charakters = getAllCharacters();
+        this.myName = 1;
+        this.characters = getAllCharacters();
 
         this.characterSprites = [];
         this.characterSpriteMap = new Map(); 
@@ -43,7 +43,7 @@ class GameManager {
 
     initializePlayers() {
         for (let i = 0; i < this.numPlayers; i++) {
-            const player = new Player();
+            const player = new Player(i+1);
             // Characters will be assigned during the draft, not here.
             player.cash = 1; 
             this.players.push(player);
@@ -67,10 +67,11 @@ class GameManager {
     }
 
     switchToPickingPhase() {
+        let player = this.getCurrentPlayer();
         this.chacacterContainer.visible  = false;
         this.mainContainer.visible = false;
         this.currentPhase = 'picking'; 
-        if (this.currentPlayerIndex == this.myIndex){
+        if (player.name == this.myName){
             this.pickingContainer.visible = true;
             this.elseTurnContainer.visible = false;
              this.showAssetData(this.mainContainer);
@@ -104,7 +105,7 @@ class GameManager {
         
         
         this.characterChoosingPlayerIndex = 0;
-        this.availableCharacters = [...this.charakters];
+        this.availableCharacters = [...this.characters];
 
         
         this.characterSprites.forEach(sprite => {
@@ -117,7 +118,7 @@ class GameManager {
     }
     nextTurn() {
         
-        const sortedPlayers = [...this.players].sort((a, b) => a.charakter.order - b.charakter.order);
+        const sortedPlayers = [...this.players].sort((a, b) => a.character.order - b.character.order);
         const lastPlayer = this.players[this.currentPlayerIndex];
         const lastPlayerSortedIndex = lastPlayer ? sortedPlayers.indexOf(lastPlayer) : -1;
         if (this.currentPlayerIndex == this.players.length -1) {
@@ -135,11 +136,11 @@ class GameManager {
         currentPlayer.playableLiabilities = 1;
         currentPlayer.reveal = true;
         currentPlayer.tempHand = []; 
-        currentPlayer.charakter.usePassive(currentPlayer);
+        currentPlayer.character.usePassive(currentPlayer);
         this.switchToPickingPhase();        
     }
     newRound() {
-        this.currentPhase = 'character_draft';
+        this.currentPhase = 'character';
         this.chacacterContainer.visible = true;
         this.mainContainer.visible = false;
         this.pickingContainer.visible = false;
@@ -151,7 +152,7 @@ class GameManager {
         this.draftOverlay.visible = true;
 
         this.players.forEach(p => {
-            p.charakter = null;
+            p.character = null;
             p.reveal = false;
         });
 
@@ -161,12 +162,12 @@ class GameManager {
         const currentPlayer = this.getCurrentPlayer();
         
         if (this.currentPhase == 'picking') {
-            this.statsText.text = `${currentPlayer.charakter.name} is picking cards`;
+            this.statsText.text = `${currentPlayer.name} = ${currentPlayer.character.name} is picking cards`;
         } else if(this.currentPhase == "main"){
-            this.statsText.text = `${currentPlayer.charakter.name} is playing | ${currentPlayer.cash}`;
-        } else if(this.currentPhase == "character"){
-            this.statsText.text = `Chose a character`;
-        }
+            this.statsText.text = `${currentPlayer.name} = ${currentPlayer.character.name} is playing | ${currentPlayer.cash}`;
+        } /*else if(this.currentPhase == "character"){
+            this.statsText.text = `${currentPlayer.name} Chose a character`;
+        }*/
         
         this.players.forEach(player => {
             player.hand.forEach(card => {
@@ -311,12 +312,13 @@ class GameManager {
     showAssetData(container)
     {
         this.players.forEach(async player => {
+         
             let texture;
             if(player.reveal){
-                texture = await Assets.load(player.charakter.iconPath);
+                texture = await Assets.load(player.character.iconPath);
             }
             else{
-                texture = await Assets.load("./miscellaneous/discard.png")
+                texture = await Assets.load("./miscellaneous/noneCharacter.png") // HERE
             }
             
             let characterIcon = new Sprite(texture);
@@ -347,7 +349,7 @@ class GameManager {
         this.players.forEach(async player => {
             let texture;
             if(player.reveal){
-                texture = await Assets.load(player.charakter.texturePath);
+                texture = await Assets.load(player.character.texturePath);
             }
             else{
                 texture = await Assets.load("./miscellaneous/character_back.webp")
@@ -396,13 +398,13 @@ class GameManager {
         container.addChild(nextButton);
     }
     async GrabCharacters(){
-        for (const character of this.charakters) {
+        for (const character of this.characters) {
             let texture = await Assets.load(character.texturePath);
             let sprite = new Sprite(texture);
             sprite.scale.set(0.3);
             sprite.anchor.set(0.5);
             
-            sprite.visible = false; // All sprites are hidden initially
+            sprite.visible = false; 
             
     
             sprite.on('pointerdown', () => this.handleCharacterDraftPick(character));
@@ -413,7 +415,7 @@ class GameManager {
         }
     }
     setupCharacterDraft() {
-        this.shuffledCharacters = [...this.charakters].sort(() => 0.5 - Math.random());
+        this.shuffledCharacters = [...this.characters].sort(() => 0.5 - Math.random());
         this.faceUpCards = [];
         this.faceDownCards = [];
 
@@ -450,7 +452,7 @@ class GameManager {
 
         const currentPlayerIndex = this.characterDraftingPlayerIndex;
         this.currentDraftChoices = [...this.faceDownCards];
-        this.statsText.text = `Player ${currentPlayerIndex + 1}, choose your character!`;
+        this.statsText.text = `Player ${currentPlayerIndex + 1}, choose!`;
         
         const spacing = 190;
         const startX = (this.app.screen.width - (this.currentDraftChoices.length - 1) * spacing) / 2;
@@ -466,9 +468,9 @@ class GameManager {
             }
         });
     }
-     handleCharacterDraftPick(chosenCharacter) {
+    handleCharacterDraftPick(chosenCharacter) {
         const currentPlayerIndex = this.characterDraftingPlayerIndex;
-        this.players[currentPlayerIndex].charakter = chosenCharacter;
+        this.players[currentPlayerIndex].character = chosenCharacter;
         this.faceDownCards = this.faceDownCards.filter(c => c !== chosenCharacter);
 
         this.currentDraftChoices.forEach(card => {
@@ -489,21 +491,19 @@ class GameManager {
         this.draftOverlay.visible = false;
         this.characterSpriteMap.forEach(sprite => sprite.visible = false);
 
-        this.players.sort((a, b) => a.charakter.order - b.charakter.order);
+        this.players.sort((a, b) => a.character.order - b.character.order);
         
         this.currentPlayerIndex = 0;
         const currentPlayer = this.getCurrentPlayer();
         currentPlayer.reveal = true;
-        currentPlayer.charakter.usePassive(currentPlayer);
+        currentPlayer.character.usePassive(currentPlayer);
 
         this.switchToPickingPhase();
     }
      async otherCards(){
         this.elseTurnContainer.removeChildren();
         
-        const currentPlayer = this.getCurrentPlayer();
-
-       
+        const currentPlayer = this.getCurrentPlayer();      
         
         const buttonTex = await Assets.load("./miscellaneous/next.png");
         const nextButton = new Sprite(buttonTex);

@@ -15,9 +15,7 @@ import GameManager from "./models/GameManager.js";
     document.body.appendChild(app.canvas);
     const sprites = new Container();
 
-    app.stage.addChild(sprites);
-
-   
+    app.stage.addChild(sprites);   
 
     const gameManager = new GameManager(app);
     

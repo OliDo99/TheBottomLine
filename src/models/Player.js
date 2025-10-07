@@ -1,11 +1,12 @@
 import Asset from './Asset.js';
 import Liablity from './Liablity.js';
 class Player {
-    constructor() {
+    constructor(name) {
         this.hand = [];
         this.playableAssets = 1;
         this.playableLiabilities = 1;
-        this.charakter = null;
+        this.character = null;
+        this.name = name;
 
         this.assetList = [];
         this.cash = 0;
