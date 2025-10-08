@@ -9,7 +9,7 @@ class AssetCards {
     }
 
     initializeDeck() {
-        const assetCards = boardgameData.deck_list.asset_deck.card_list;        
+        const assetCards = boardgameData.deck_list.asset_deck.card_list;
         assetCards.forEach(card=>{
             this.cardTemplates.push({
                 title: card.title,
@@ -19,8 +19,7 @@ class AssetCards {
                 ability: card.ability,
                 texturePath: card.card_image_url
             });
-        })       
-       
+        })
     }
 
     async initializeAllSprites() {

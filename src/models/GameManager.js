@@ -1,19 +1,24 @@
 import { Text, Container,Graphics,Assets, Sprite} from "pixi.js";
+import { Input,Button } from '@pixi/ui';
 import Player from './Player.js';
 import AssetCards from "./AssetCards.js";
 import LiablityCards from "./LiablityCards.js"
 import Asset from './Asset.js';
 import Liability from './Liablity.js';
 import { getAllCharacters } from './Characters.js';
+import NetworkManager from "./NetworkManager.js";
 
 class GameManager {
 
     constructor(app) {
+        this.networkManager = new NetworkManager('ws://localhost:3000/websocket');
         this.app = app;
         this.players = [];
         this.currentPlayerIndex = 0;
         this.numPlayers = 4;
         this.myName = 1;
+        
+           
         this.characters = getAllCharacters();
 
         this.characterSprites = [];
@@ -26,6 +31,7 @@ class GameManager {
 
         this.initializePlayers();
         this.currentPhase = 'picking'; 
+        this.lobbyContainer = new Container();
         this.mainContainer = new Container();
         this.pickingContainer = new Container();
         this.chacacterContainer = new Container();
@@ -44,20 +50,18 @@ class GameManager {
     initializePlayers() {
         for (let i = 0; i < this.numPlayers; i++) {
             const player = new Player(i+1);
-            // Characters will be assigned during the draft, not here.
             player.cash = 1; 
             this.players.push(player);
         }
     }
     async startGame(){
-        // 1. Prepare all game assets and sprites
-        await this.GrabCharacters(); // This creates the character sprites
+        await this.GrabCharacters(); 
         await this.CreateAssetDeck();
         await this.CreateLiabilityDeck();
         await this.nextButton(this.mainContainer);
         await this.GiveStartHand();
         
-        // 2. Start the game with the first round's character draft
+        
         this.newRound();
     }
     
@@ -65,11 +69,50 @@ class GameManager {
     getCurrentPlayer() {
         return this.players[this.currentPlayerIndex];
     }
+    switchToLobby(){
+        
+        this.lobbyContainer.visible = true;
+        this.chacacterContainer.visible  = false;
+        this.mainContainer.visible = false;
+        this.elseTurnContainer.visible = false;
+        
+        const myInput = new Input({
+            bg: new Graphics().roundRect(0, 0, 200, 40, 5).fill(0x333333),
+            padding: [10, 10, 10, 10],
+            textStyle: {
+              fontSize: 18,
+              fontWeight: 'bold'
+            },
+            placeholder:"Enter Name",
+            
+          
+        });
+        myInput.onEnter.connect(val => {
+            console.log(val)
+            this.networkManager.sendMessage(`{"username":"${val}","channel":"test"}`)
 
+        });
+        myInput.position.set(window.innerWidth/2-100, window.innerHeight/2-20);
+        
+
+        const button = new Button(
+            new Graphics()
+                .rect(0, 0, 100, 50, 15)
+                .fill(0xFFFFFF)
+        );
+
+        button.onPress.connect(() =>  this.networkManager.sendMessage(`{"action":"StartGame"}`));
+
+        this.lobbyContainer.addChild(button.view);
+
+
+        this.lobbyContainer.addChild(myInput);
+    }
     switchToPickingPhase() {
         let player = this.getCurrentPlayer();
         this.chacacterContainer.visible  = false;
         this.mainContainer.visible = false;
+        this.lobbyContainer.visible = false;
         this.currentPhase = 'picking'; 
         if (player.name == this.myName){
             this.pickingContainer.visible = true;
@@ -87,9 +130,10 @@ class GameManager {
         this.updateUI();
         
     }
-
+    
     switchToMainPhase() {
         this.currentPhase = 'main';
+        this.lobbyContainer.visible = false;
         this.mainContainer.visible = true;
         this.pickingContainer.visible = false;
         this.chacacterContainer.visible  = false;
@@ -98,6 +142,7 @@ class GameManager {
     }
     switchToCharacterPhase() {
         this.currentPhase = 'character';
+        this.lobbyContainer.visible = false;
         this.chacacterContainer.visible = true;
         this.mainContainer.visible = false;
         this.pickingContainer.visible = false;
@@ -146,7 +191,7 @@ class GameManager {
         this.pickingContainer.visible = false;
         this.elseTurnContainer.visible = false;
         
-        // Dim the background to focus on the choice
+       
         this.draftOverlay.clear().rect(0, 0, this.app.screen.width, this.app.screen.height).fill({ color: 0x000000, alpha: 0.7 });
         this.chacacterContainer.addChildAt(this.draftOverlay, 0);
         this.draftOverlay.visible = true;
@@ -165,9 +210,9 @@ class GameManager {
             this.statsText.text = `${currentPlayer.name} = ${currentPlayer.character.name} is picking cards`;
         } else if(this.currentPhase == "main"){
             this.statsText.text = `${currentPlayer.name} = ${currentPlayer.character.name} is playing | ${currentPlayer.cash}`;
-        } /*else if(this.currentPhase == "character"){
+        } else if(this.currentPhase == "character"){
             this.statsText.text = `${currentPlayer.name} Chose a character`;
-        }*/
+        }
         
         this.players.forEach(player => {
             player.hand.forEach(card => {
@@ -194,6 +239,7 @@ class GameManager {
     }
     async CreateAssetDeck() {
         const assetDeck = new AssetCards();
+        
 
         const assetDeckSprite = await assetDeck.initializeDeckSprite();
 
