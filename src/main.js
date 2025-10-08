@@ -44,7 +44,7 @@ import NetworkManager from "./models/NetworkManager.js";
     sprites.addChild(gameManager.mainContainer);
     sprites.addChild(gameManager.elseTurnContainer);
     
-    const nw = new NetworkManager('ws://localhost:3000/websocket');
+    const nw = new NetworkManager('ws://localhost:3000/websocket', gameManager);
 
     gameManager.updateUI();
 })();
