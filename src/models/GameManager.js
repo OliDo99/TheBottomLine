@@ -11,7 +11,7 @@ import NetworkManager from "./NetworkManager.js";
 class GameManager {
 
     constructor(app) {
-        this.networkManager = new NetworkManager('ws://localhost:3000/websocket');
+        
         this.app = app;
         this.players = [];
         this.currentPlayerIndex = 0;
@@ -41,10 +41,10 @@ class GameManager {
         text: '',
         style: {
             fill: '#ffffff',
-            fontSize: 36,
+            fontSize: 36,   
             fontFamily: 'MyFont',
-        }
-    });
+        }});
+        this.networkManager = new NetworkManager('ws://localhost:3000/websocket', this);
     }
 
     initializePlayers() {
@@ -90,6 +90,7 @@ class GameManager {
         myInput.onEnter.connect(val => {
             console.log(val)
             this.networkManager.sendMessage(`{"username":"${val}","channel":"test"}`)
+            this.myName = val;
 
         });
         myInput.position.set(window.innerWidth/2-100, window.innerHeight/2-20);
@@ -207,9 +208,9 @@ class GameManager {
         const currentPlayer = this.getCurrentPlayer();
         
         if (this.currentPhase == 'picking') {
-            this.statsText.text = `${currentPlayer.name} = ${currentPlayer.character.name} is picking cards`;
+            this.statsText.text = `Name: ${currentPlayer.name} = ${currentPlayer.character.name} is picking cards`;
         } else if(this.currentPhase == "main"){
-            this.statsText.text = `${currentPlayer.name} = ${currentPlayer.character.name} is playing | ${currentPlayer.cash}`;
+            this.statsText.text = `Name: ${currentPlayer.name} = ${currentPlayer.character.name} is playing | ${currentPlayer.cash}`;
         } else if(this.currentPhase == "character"){
             this.statsText.text = `${currentPlayer.name} Chose a character`;
         }
