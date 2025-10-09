@@ -17,15 +17,13 @@ class GameManager {
         this.currentPlayerIndex = 0;
         this.numPlayers = 4;
         this.myName = 1;
-        
-           
         this.characters = getAllCharacters();
 
         this.characterSprites = [];
-        this.characterSpriteMap = new Map(); 
+        this.characterSpriteMap = new Map();
         this.shuffledCharacters = [];
-        this.faceUpCards = [];     
-        this.faceDownCards = [];    
+        this.faceUpCards = [];
+        this.faceDownCards = [];
         this.characterDraftingPlayerIndex = 0;
         this.currentDraftChoices = [];
 

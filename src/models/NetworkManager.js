@@ -8,17 +8,22 @@ class NetworkManager {
         "StartGame" : this.startGame.bind(this),
         "GameStartedOk" : this.gameStartedOk.bind(this)
     };
-
-    constructor(url, GameManager) {
+    constructor(url, gameManager) {
         this.url = url;
         this.queue = [];
-        this.gameManager = GameManager;
+        this.gameManager = gameManager;
 
         this.connect();
 
         // Opening message has to contain username & channel for now
         // Allow user input for this later
-        //this.sendMessage("{\"username\":\"test\",\"channel\": \"abcd\"}");
+        this.data = {
+            "username" : "test",
+            "channel" : "abcd"
+        }
+        //this.sendCommand()
+        //this.sendMessage(JSON.stringify(this.data, null, 0));
+        this.sendCommand("login", this.data);
     }
 
     connect() {
@@ -62,12 +67,22 @@ class NetworkManager {
     }
 
     sendMessage(data) {
-        console.log("Sending packet:" + data);
+        console.log("Sending packet: " + data);
         if (this.connection.readyState == WebSocket.OPEN) {
             this.connection.send(data);
         } else {
             this.queue.push(data);
         }
+    }
+
+    sendCommand(command, data) {
+        this.packet = {
+            "action" : command,
+            "data" : data
+        }
+        this.jsonData = JSON.stringify(this.packet, null, 0);
+        console.log(this.jsonData);
+        this.sendMessage(this.jsonData);
     }
 
     gameStartedOk(data){
