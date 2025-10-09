@@ -586,6 +586,55 @@ class GameManager {
             this.elseTurnContainer.addChild(cardBack);
         }
     }
+
+    async messageStartGame(data) {
+        console.log("Received hand data from server:", data);
+        const handData = data.hand;
+        
+        const player = this.players.find(p => p.name == this.myName);
+        if (!player) {
+            console.error("Could not find the local player!");
+            return;
+        }
+       
+        for (const card of handData) {
+            let newCard;
+            
+            if ('Left' in card) {
+                const cardData = card.Left; 
+                newCard = new Asset(
+                    cardData.title,
+                    cardData.color,
+                    cardData.gold_value,
+                    cardData.silver_value,
+                    cardData.ability,
+                    cardData.image_front_url
+                );
+            } else {
+                const cardData = card.Right; 
+                newCard = new Liability(
+                    cardData.rfr_type, 
+                    cardData.value,
+                    cardData.image_front_url
+                );
+            }
+            
+            
+            await newCard.initializeSprite();
+
+            // 4. Add the card to the player's hand and the sprite to the stage
+            player.addCardToHand(newCard); // This also makes the card playable
+            this.mainContainer.addChild(newCard.sprite);
+        }
+
+        // 5. Position all the new cards neatly in the player's hand
+        player.positionCardsInHand();
+
+        // 6. Call the GameManager to set up the rest of the game state
+        // This replaces your old GiveStartHand logic
+        await this.startGame(); 
+    }
+
     async GiveStartHand() {
         const assetDeck = new AssetCards();
         const liabilityDeck = new LiablityCards();
