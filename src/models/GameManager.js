@@ -19,7 +19,7 @@ class GameManager {
         this.myName = 1;
         this.characters = getAllCharacters();
 
-        this.characterSprites = [];
+        
         this.characterSpriteMap = new Map();
         this.shuffledCharacters = [];
         this.faceUpCards = [];
@@ -27,7 +27,7 @@ class GameManager {
         this.characterDraftingPlayerIndex = 0;
         this.currentDraftChoices = [];
 
-        this.initializePlayers();
+        
         this.currentPhase = 'picking'; 
         this.lobbyContainer = new Container();
         this.mainContainer = new Container();
@@ -53,11 +53,11 @@ class GameManager {
         }
     }
     async startGame(){
-        await this.GrabCharacters(); 
+        //await this.GrabCharacters(); 
         await this.CreateAssetDeck();
         await this.CreateLiabilityDeck();
         await this.nextButton(this.mainContainer);
-        await this.GiveStartHand();
+        
         
         
         this.newRound();
@@ -73,7 +73,7 @@ class GameManager {
         this.chacacterContainer.visible  = false;
         this.mainContainer.visible = false;
         this.elseTurnContainer.visible = false;
-        
+        this.statsText.text = `?/4`
         const myInput = new Input({
             bg: new Graphics().roundRect(0, 0, 200, 40, 5).fill(0x333333),
             padding: [10, 10, 10, 10],
@@ -87,9 +87,9 @@ class GameManager {
         });
         myInput.onEnter.connect(val => {
             console.log(val)
-            this.networkManager.sendMessage(`{"username":"${val}","channel":"test"}`)
-            this.myName = val;
+            this.networkManager.sendCommand("Connect", {"username":val,"channel":"test"});
 
+            this.myName = val;
         });
         myInput.position.set(window.innerWidth/2-100, window.innerHeight/2-20);
         
@@ -99,12 +99,21 @@ class GameManager {
                 .rect(0, 0, 100, 50, 15)
                 .fill(0xFFFFFF)
         );
+        button.onPress.connect(() =>  {
+            this.networkManager.sendCommand("StartGame");
+           
+        });
 
-        button.onPress.connect(() =>  this.networkManager.sendMessage(`{"action":"StartGame"}`));
+        const button2 = new Button(
+            new Graphics()
+                .rect(0, 0, 100, 50, 15)
+
+                .fill(0xFFFFF)
+        );
+        button2.onPress.connect(() =>    this.networkManager.sendCommand("GetSelectableCharacters"));
 
         this.lobbyContainer.addChild(button.view);
-
-
+        this.chacacterContainer.addChild(button2.view);
         this.lobbyContainer.addChild(myInput);
     }
     switchToPickingPhase() {
@@ -112,12 +121,21 @@ class GameManager {
         this.chacacterContainer.visible  = false;
         this.mainContainer.visible = false;
         this.lobbyContainer.visible = false;
+       
         this.currentPhase = 'picking'; 
+
+       
+
         if (player.name == this.myName){
             this.pickingContainer.visible = true;
             this.elseTurnContainer.visible = false;
-             this.showAssetData(this.mainContainer);
+            this.showAssetData(this.mainContainer);
             this.showCharacterData(this.mainContainer);
+            player.hand.forEach(card => {
+                this.pickingContainer.addChild(card.sprite);
+
+            });
+            player.positionCardsInHandPicking();
         }
         else{
             this.otherCards();
@@ -125,6 +143,7 @@ class GameManager {
             this.pickingContainer.visible = false;
             this.showAssetData(this.elseTurnContainer);
             this.showCharacterData(this.elseTurnContainer);
+            this.elseTurnContainer.addChild(this.statsText);
         }
         this.updateUI();
         
@@ -137,31 +156,12 @@ class GameManager {
         this.pickingContainer.visible = false;
         this.chacacterContainer.visible  = false;
         this.elseTurnContainer.visible = false;
-        this.updateUI();
-    }
-    switchToCharacterPhase() {
-        this.currentPhase = 'character';
-        this.lobbyContainer.visible = false;
-        this.chacacterContainer.visible = true;
-        this.mainContainer.visible = false;
-        this.pickingContainer.visible = false;
-        this.elseTurnContainer.visible = false;
-        
-        
-        this.characterChoosingPlayerIndex = 0;
-        this.availableCharacters = [...this.characters];
-
-        
-        this.characterSprites.forEach(sprite => {
-            sprite.eventMode = 'static';
-            sprite.alpha = 1.0;
-        });
-
-        this.statsText.text = `Player ${this.characterChoosingPlayerIndex + 1}, choose your character!`;
+        this.mainContainer.addChild(this.statsText);
         this.updateUI();
     }
     nextTurn() {
-        
+        console.log(this.players);
+
         const sortedPlayers = [...this.players].sort((a, b) => a.character.order - b.character.order);
         const lastPlayer = this.players[this.currentPlayerIndex];
         const lastPlayerSortedIndex = lastPlayer ? sortedPlayers.indexOf(lastPlayer) : -1;
@@ -189,18 +189,26 @@ class GameManager {
         this.mainContainer.visible = false;
         this.pickingContainer.visible = false;
         this.elseTurnContainer.visible = false;
+        this.lobbyContainer.visible = false;
         
        
         this.draftOverlay.clear().rect(0, 0, this.app.screen.width, this.app.screen.height).fill({ color: 0x000000, alpha: 0.7 });
         this.chacacterContainer.addChildAt(this.draftOverlay, 0);
         this.draftOverlay.visible = true;
-
+        
+        this.chacacterContainer.addChild(this.statsText);
+        
         this.players.forEach(p => {
+            // reset Values
             p.character = null;
             p.reveal = false;
+            p.playableAssets = 1;
+            p.playableLiabilities = 1;
+            p.maxTempCards = 3;
+            p.maxKeepCards = 2;
         });
 
-        this.setupCharacterDraft();
+        
     }
     updateUI() {
         const currentPlayer = this.getCurrentPlayer();
@@ -208,9 +216,8 @@ class GameManager {
         if (this.currentPhase == 'picking') {
             this.statsText.text = `Name: ${currentPlayer.name} = ${currentPlayer.character.name} is picking cards`;
         } else if(this.currentPhase == "main"){
-            this.statsText.text = `Name: ${currentPlayer.name} = ${currentPlayer.character.name} is playing | ${currentPlayer.cash}`;
-        } else if(this.currentPhase == "character"){
-            this.statsText.text = `${currentPlayer.name} Chose a character`;
+            //this.statsText.text = `Name: ${currentPlayer.name} = ${currentPlayer.character.name} is playing | ${currentPlayer.cash}`;
+            this.statsText.text = `assets:${currentPlayer.playableAssets}, liablities: ${currentPlayer.playableLiabilities}`;
         }
         
         this.players.forEach(player => {
@@ -242,13 +249,15 @@ class GameManager {
 
         const assetDeckSprite = await assetDeck.initializeDeckSprite();
 
-        assetDeck.setDeckPosition(window.innerWidth/2-150, window.innerHeight-50);
+        assetDeck.setDeckPosition(window.innerWidth/2-150, 70);
 
         assetDeckSprite.on('mousedown', async () => {
+            
+            this.networkManager.sendCommand("DrawCard");
         const currentPlayer = this.getCurrentPlayer();
         if (currentPlayer.tempHand.length < currentPlayer.maxTempCards) {
             const card = assetDeck.getRandomCard();
-
+            
             await card.initializeSprite();
             
             card.sprite.on('cardPlayed', () => {
@@ -300,55 +309,59 @@ class GameManager {
     
         const liabilityDeckSprite = await liabilityDeck.initializeDeckSprite();   
     
-        liabilityDeck.setDeckPosition(window.innerWidth/2+150, window.innerHeight-50);
+        liabilityDeck.setDeckPosition(window.innerWidth/2+150, 70);
 
         liabilityDeckSprite.on('mousedown', async () => {
-        const currentPlayer = this.getCurrentPlayer();
-        if (currentPlayer.tempHand.length < currentPlayer.maxTempCards) {
-            const card = liabilityDeck.getRandomCard();
-            await card.initializeSprite();
 
-            card.sprite.on('cardPlayed', () => {
-                const cardIndex = currentPlayer.hand.indexOf(card);
-                if (cardIndex !== -1) {
-                    if(currentPlayer.playLiability(cardIndex)){
-                        this.mainContainer.removeChild(card.sprite);
-                        this.mainContainer.addChild(card.sprite)
+            this.networkManager.sendCommand("DrawCard",{ "card_type": "Liability" });
+
+
+            const currentPlayer = this.getCurrentPlayer();
+            if (currentPlayer.tempHand.length < currentPlayer.maxTempCards) {
+                const card = liabilityDeck.getRandomCard();
+                await card.initializeSprite();
+
+                card.sprite.on('cardPlayed', () => {
+                    const cardIndex = currentPlayer.hand.indexOf(card);
+                    if (cardIndex !== -1) {
+                        if(currentPlayer.playLiability(cardIndex)){
+                            this.mainContainer.removeChild(card.sprite);
+                            this.mainContainer.addChild(card.sprite)
+                        }
+                        this.updateUI();
+                        
                     }
-                    this.updateUI();
-                    
-                }
-            });
+                });
 
-            card.sprite.on('cardDiscarded', (discardedCard) => {
-                const cardIndex = currentPlayer.tempHand.indexOf(discardedCard);
-                if (cardIndex !== -1) {
-                    this.pickingContainer.removeChild(discardedCard.sprite);
-                    this.pickingContainer.removeChild(discardedCard.discardButton);
-                    currentPlayer.tempHand.splice(cardIndex, 1);
-                    
-                    if(currentPlayer.tempHand.length == currentPlayer.maxKeepCards){
+                card.sprite.on('cardDiscarded', (discardedCard) => {
+                    const cardIndex = currentPlayer.tempHand.indexOf(discardedCard);
+                    if (cardIndex !== -1) {
+                        this.pickingContainer.removeChild(discardedCard.sprite);
+                        this.pickingContainer.removeChild(discardedCard.discardButton);
+                        currentPlayer.tempHand.splice(cardIndex, 1);
+                        
+                        if(currentPlayer.tempHand.length == currentPlayer.maxKeepCards){
 
-                        currentPlayer.tempHand.forEach(remainingCard => {
-                            currentPlayer.addCardToHand(remainingCard);
-                            this.mainContainer.addChild(remainingCard.sprite);
-                            this.pickingContainer.removeChild(remainingCard.discardButton);
-                            currentPlayer.tempHand = [];
-                            this.switchToMainPhase();
-                        });
+                            currentPlayer.tempHand.forEach(remainingCard => {
+                                currentPlayer.addCardToHand(remainingCard);
+                                this.mainContainer.addChild(remainingCard.sprite);
+                                this.pickingContainer.removeChild(remainingCard.discardButton);
+                                currentPlayer.tempHand = [];
+                                this.switchToMainPhase();
+                            });
+                        }
+                        currentPlayer.positionCardsInHand();
+                    
                     }
-                    currentPlayer.positionCardsInHand();
-                   
-                }
-            });
+                });
 
-            currentPlayer.addCardToTempHand(card);
-            this.pickingContainer.addChild(card.sprite);
-            if (card.discardButton) {
-                this.pickingContainer.addChild(card.discardButton);
+                currentPlayer.addCardToTempHand(card);
+                this.pickingContainer.addChild(card.sprite);
+                if (card.discardButton) {
+                    this.pickingContainer.addChild(card.discardButton);
+                }
+                currentPlayer.positionTempCards();
             }
-            currentPlayer.positionTempCards();
-        }
         });
         this.pickingContainer.addChild(liabilityDeckSprite);
         return liabilityDeckSprite;
@@ -442,95 +455,7 @@ class GameManager {
         
         container.addChild(nextButton);
     }
-    async GrabCharacters(){
-        for (const character of this.characters) {
-            let texture = await Assets.load(character.texturePath);
-            let sprite = new Sprite(texture);
-            sprite.scale.set(0.3);
-            sprite.anchor.set(0.5);
-            
-            sprite.visible = false; 
-            
     
-            sprite.on('pointerdown', () => this.handleCharacterDraftPick(character));
-
-            this.chacacterContainer.addChild(sprite);
-            this.characterSprites.push(sprite);
-            this.characterSpriteMap.set(character, sprite);
-        }
-    }
-    setupCharacterDraft() {
-        this.shuffledCharacters = [...this.characters].sort(() => 0.5 - Math.random());
-        this.faceUpCards = [];
-        this.faceDownCards = [];
-
-        let numFaceUp = 0;
-        if (this.numPlayers === 4) numFaceUp = 2;
-        else if (this.numPlayers === 5) numFaceUp = 1;
-
-        for (let i = 0; i < numFaceUp; i++) {
-            this.faceUpCards.push(this.shuffledCharacters.pop());
-        }
-        
-        const faceUpSpacing = 190;
-        const faceUpStartX = (this.app.screen.width - (this.faceUpCards.length - 1) * faceUpSpacing) / 2;
-        this.faceUpCards.forEach((card, i) => {
-            const sprite = this.characterSpriteMap.get(card);
-            if (sprite) {
-                sprite.position.set(faceUpStartX + i * faceUpSpacing, 180);
-                sprite.visible = true;
-                sprite.alpha = 0.6;
-                sprite.eventMode = 'none';
-            }
-        });
-
-        this.faceDownCards = [...this.shuffledCharacters];
-        this.characterDraftingPlayerIndex = 0;
-        this.presentCharacterDraftChoice();
-    }
-    presentCharacterDraftChoice() {
-        this.characterSpriteMap.forEach(sprite => sprite.visible = false);
-        this.faceUpCards.forEach(card => {
-            const sprite = this.characterSpriteMap.get(card);
-            if(sprite) sprite.visible = true;
-        });
-
-        const currentPlayerIndex = this.characterDraftingPlayerIndex;
-        this.currentDraftChoices = [...this.faceDownCards];
-        this.statsText.text = `Player ${currentPlayerIndex + 1}, choose!`;
-        
-        const spacing = 190;
-        const startX = (this.app.screen.width - (this.currentDraftChoices.length - 1) * spacing) / 2;
-        
-        this.currentDraftChoices.forEach((card, i) => {
-            const sprite = this.characterSpriteMap.get(card);
-            if (sprite) {
-                sprite.position.set(startX + i * spacing, this.app.screen.height / 2 + 100);
-                sprite.visible = true;
-                sprite.eventMode = 'static';
-                sprite.cursor = 'pointer';
-                sprite.alpha = 1.0;
-            }
-        });
-    }
-    handleCharacterDraftPick(chosenCharacter) {
-        const currentPlayerIndex = this.characterDraftingPlayerIndex;
-        this.players[currentPlayerIndex].character = chosenCharacter;
-        this.faceDownCards = this.faceDownCards.filter(c => c !== chosenCharacter);
-
-        this.currentDraftChoices.forEach(card => {
-            const sprite = this.characterSpriteMap.get(card);
-            if (sprite) sprite.eventMode = 'none';
-        });
-
-        this.characterDraftingPlayerIndex++;
-
-        if (this.characterDraftingPlayerIndex >= this.numPlayers) {
-            this.finalizeRound();
-        } else {
-            this.presentCharacterDraftChoice();
-        }
-    }
     finalizeRound() {
         this.statsText.text = "Round starting!";
         this.draftOverlay.visible = false;
@@ -590,92 +515,120 @@ class GameManager {
     async messageStartGame(data) {
         console.log("Received hand data from server:", data);
         const handData = data.hand;
-        
+       
         const player = this.players.find(p => p.name == this.myName);
         if (!player) {
             console.error("Could not find the local player!");
             return;
         }
-       
+        this.statsText.text = `${this.players[this.currentPlayerIndex].name} Is Selecting Their Character`;
+
         for (const card of handData) {
+
             let newCard;
             
-            if ('Left' in card) {
-                const cardData = card.Left; 
+            if (card.card_type == "asset") {
+               
                 newCard = new Asset(
-                    cardData.title,
-                    cardData.color,
-                    cardData.gold_value,
-                    cardData.silver_value,
-                    cardData.ability,
-                    cardData.image_front_url
+                    card.title,
+                    card.color,
+                    card.gold_value,
+                    card.silver_value,
+                    card.ability,
+                    card.image_front_url
                 );
+                await newCard.initializeSprite();
+                newCard.sprite.on('cardPlayed', () => {
+                const cardIndex = player.hand.indexOf(newCard);
+                if (cardIndex !== -1) {
+                    if (player.playAsset(cardIndex)) {
+                        this.mainContainer.removeChild(newCard.sprite);
+                        this.mainContainer.addChild(newCard.sprite);
+                    }
+                    this.updateUI();
+                }
+            });
             } else {
-                const cardData = card.Right; 
                 newCard = new Liability(
-                    cardData.rfr_type, 
-                    cardData.value,
-                    cardData.image_front_url
+                    card.rfr_type, 
+                    card.value,
+                    card.image_front_url
                 );
+                await newCard.initializeSprite();
+                newCard.sprite.on('cardPlayed', () => {
+                const cardIndex = player.hand.indexOf(newCard);
+                if (cardIndex !== -1) {
+                    if(player.playLiability(cardIndex)){
+                        this.mainContainer.removeChild(newCard.sprite);
+                        this.mainContainer.addChild(newCard.sprite)
+                    }
+                    this.updateUI();
+                }
+            });
             }
-            
-            
-            await newCard.initializeSprite();
-
-            // 4. Add the card to the player's hand and the sprite to the stage
-            player.addCardToHand(newCard); // This also makes the card playable
+            player.addCardToHand(newCard); 
             this.mainContainer.addChild(newCard.sprite);
         }
-
-        // 5. Position all the new cards neatly in the player's hand
+        
         player.positionCardsInHand();
 
-        // 6. Call the GameManager to set up the rest of the game state
-        // This replaces your old GiveStartHand logic
+        this.networkManager.sendCommand("GetSelectableCharacters");
+
         await this.startGame(); 
     }
 
-    async GiveStartHand() {
-        const assetDeck = new AssetCards();
-        const liabilityDeck = new LiablityCards();
+    newPlayer(data) {
+        this.statsText.text = `${data.usernames.length} / 4`;
+        this.players = [];
+        
+        data.usernames.forEach(username => {
+            const player = new Player(username);
+            this.players.push(player);
+        });
+    }
+    receiveSelectableCharacters(data) {
+        this.chacacterContainer.visible  = true;    
+       
+        console.log("Received selectable characters:", data);
+        
+        const allowedNames = data.pickable_characters.characters;
 
-        for (const player of this.players) {
-            
-            for (let i = 0; i < 2; i++) {
-                const assetCard = assetDeck.getRandomCard();
-                await assetCard.initializeSprite();
-                assetCard.sprite.on('cardPlayed', () => {
-                    const cardIndex = player.hand.indexOf(assetCard);
-                    if (cardIndex !== -1) {
-                        if (player.playAsset(cardIndex)) {
-                            this.mainContainer.removeChild(assetCard.sprite);
-                            this.mainContainer.addChild(assetCard.sprite);
-                        }
-                        this.updateUI();
-                    }
-                });
-                player.addCardToHand(assetCard);
-                this.mainContainer.addChild(assetCard.sprite);
-            }
+        this.faceUpCards = this.characters.filter(character => allowedNames.includes(character.textureName));
+        console.log("Face Up Cards:", this.faceUpCards);
+
+        const totalCharacters = this.faceUpCards.length;
+        const spacing = 200; 
+        const startX = (window.innerWidth - (totalCharacters * spacing)) / 2; 
+
+        this.faceUpCards.forEach(async(character, index) => {
+            const texture = await Assets.load(character.texturePath);
+            const sprite = new Sprite(texture); 
+            sprite.interactive = true; 
+            sprite.buttonMode = true; 
+            sprite.scale.set(0.3);
+            sprite.anchor.set(0.5);
+
+          
+            sprite.x = startX + index * spacing; 
+            sprite.y = window.innerHeight / 2; 
 
             
-            for (let i = 0; i < 2; i++) {
-                const liabilityCard = liabilityDeck.getRandomCard();
-                await liabilityCard.initializeSprite();
-                liabilityCard.sprite.on('cardPlayed', () => {
-                    const cardIndex = player.hand.indexOf(liabilityCard);
-                    if (cardIndex !== -1) {
-                        if(player.playLiability(cardIndex)){
-                            this.mainContainer.removeChild(liabilityCard.sprite);
-                            this.mainContainer.addChild(liabilityCard.sprite)
-                        }
-                        this.updateUI(); 
-                    }
-                });
-                player.addCardToHand(liabilityCard);
-                this.mainContainer.addChild(liabilityCard.sprite);
-            }
-        }
+            sprite.on('pointerdown', () => {
+                this.networkManager.sendCommand("SelectCharacter", { "character": character.textureName });
+                console.log(`Selected character: ${character.textureName}`); 
+                this.players[this.currentPlayerIndex].character = character;
+            });
+
+            this.chacacterContainer.addChild(sprite); 
+        });
+       
+    }
+    selectCharacter(data) {
+
+    }
+    characterSelectionOk(data){
+        this.switchToPickingPhase();
+
     }
 }
 

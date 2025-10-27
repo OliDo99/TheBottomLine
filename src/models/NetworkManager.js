@@ -1,7 +1,3 @@
-import Asset from './Asset.js';
-import Liability from './Liablity.js';
-import { Assets, Sprite} from "pixi.js";
-import GameManager from './GameManager.js';
 class NetworkManager {
     constructor(url, gameManager) {
         this.url = url;
@@ -10,22 +6,16 @@ class NetworkManager {
 
         this.commandList = {
             "DrawCard" : this.drawCard.bind(this),
-            "SelectCharacter" : this.selectCharacter.bind(this),
-            "StartGame" : this.gameManager.messageStartGame.bind(this),
-            "GameStartedOk" : this.gameStartedOk.bind(this)
+            "StartGame" : this.gameManager.messageStartGame.bind(this.gameManager),
+            "SelectCharacter" : this.gameManager.selectCharacter.bind(this.gameManager),
+            "SelectableCharacters": this.gameManager.receiveSelectableCharacters.bind(this.gameManager),
+            "PlayersInLobby" : this.gameManager.newPlayer.bind(this.gameManager),
+            "SelectCharacterOk" : this.gameManager.characterSelectionOk.bind(this.gameManager),
         };
 
         this.connect();
 
-        // Opening message has to contain username & channel for now
-        // Allow user input for this later
-        this.data = {
-            "username" : "test",
-            "channel" : "abcd"
-        }
-        //this.sendCommand()
-        //this.sendMessage(JSON.stringify(this.data, null, 0));
-        //this.sendCommand("login", this.data);
+       
     }
 
     connect() {
@@ -64,10 +54,6 @@ class NetworkManager {
         //this.game.DrawCard(1);
     }
 
-    selectCharacter(data) {
-        console.log(data);
-    }
-
     sendMessage(data) {
         console.log("Sending packet: " + data);
         if (this.connection.readyState == WebSocket.OPEN) {
@@ -87,9 +73,7 @@ class NetworkManager {
         this.sendMessage(this.jsonData);
     }
 
-    gameStartedOk(data){
-        console.log("YIPI");
-    }
+   
 }
 
 export default NetworkManager;

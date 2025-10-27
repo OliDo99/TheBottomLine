@@ -18,7 +18,7 @@ class Player {
         this.silver = 0;
         this.gold = 0;
 
-        this.cardSpacing = 200;
+        this.cardSpacing = 180;
 
         this.tempHand = []; 
         this.maxTempCards = 3;
@@ -39,6 +39,38 @@ class Player {
                 y
             );
         });
+    }
+     positionCardsInHandPicking(){
+        // split hand into liabilities (left) and assets (right), slightly overlapping
+        const liabilities = this.hand.filter(c => c instanceof Liablity);
+        const assets = this.hand.filter(c => c instanceof Asset);
+
+        // how much cards overlap (percentage of cardSpacing)
+        const overlapFactor = 0.2; // adjust to increase/decrease overlap
+        const overlap = this.cardSpacing * overlapFactor;
+
+        // centers for the two groups (left / right)
+        const leftCenter = window.innerWidth * 0.25;
+        const rightCenter = window.innerWidth * 0.75;
+
+        // slight vertical offset so the two groups don't sit exactly on top of each other
+        const baseY = window.innerHeight - 100;
+
+        if (liabilities.length > 0) {
+            const totalWidth = (liabilities.length - 1) * overlap;
+            const startX = leftCenter - totalWidth / 2;
+            liabilities.forEach((card, i) => {
+                card.setPosition(startX + i * overlap, baseY);
+            });
+        }
+
+        if (assets.length > 0) {
+            const totalWidth = (assets.length - 1) * overlap;
+            const startX = rightCenter - totalWidth / 2;
+            assets.forEach((card, i) => {
+                card.setPosition(startX + i * overlap, baseY);
+            });
+        }
     }
 
     addCardToHand(card) {

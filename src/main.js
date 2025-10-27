@@ -20,11 +20,6 @@ import GameManager from "./models/GameManager.js";
     
     const gameManager = new GameManager(app);
 
-    await gameManager.switchToLobby();
-    //await gameManager.startGame();
-    
-    
-
     const statsText = new Text({
         text: '',
         style: {
@@ -39,9 +34,14 @@ import GameManager from "./models/GameManager.js";
    
     gameManager.statsText = statsText;
 
-   
-    sprites.addChild(statsText);
+
+
+    await gameManager.switchToLobby();
     
+
+
+    sprites.addChild(statsText);
+   
     sprites.addChild(gameManager.chacacterContainer);
     sprites.addChild(gameManager.pickingContainer);
     sprites.addChild(gameManager.mainContainer);

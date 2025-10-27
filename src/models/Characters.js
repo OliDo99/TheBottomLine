@@ -3,6 +3,7 @@ class Character {
         this.name = name;
         this.ability = ability;
         this.description = description;
+        this.textureName = textureName;
         this.texturePath = `./miscellaneous/${textureName}.webp`;
         this.iconPath = `./miscellaneous/${textureName}Icon.png`;
         this.used = false; 
@@ -25,7 +26,7 @@ export class Shareholder extends Character {
             "The Shareholder",
             "Skip Master",
             "Can choose a character and skip their turn",
-            "shareholder",
+            "Shareholder",
             1
         );
     }
@@ -46,7 +47,7 @@ export class Banker extends Character {
             "The Banker",
             "Fanum Tax",
             "Takes gold from a player based on their asset colors",
-            "banker",
+            "Banker",
             2
         );
     }
@@ -70,7 +71,7 @@ export class Regulator extends Character {
             "The Regulator",
             "Card Swap",
             "Can swap cards with another player",
-            "regulator",
+            "Regulator",
             3
         );
     }
@@ -95,7 +96,7 @@ export class CEO extends Character {
             "The Chief Executive Officer",
             "Asset Master",
             "Starts with 3 playable assets per turn",
-            "ceo",
+            "CEO",
             4
         );
     }
@@ -125,7 +126,7 @@ export class CFO extends Character {
             "The Chief Financial Officer",
             "Liability Master",
             "Starts with 3 playable liabilities per turn",
-            "cfo",
+            "CFO",
             5
         );
     }
@@ -150,7 +151,7 @@ export class CSO extends Character {
             "The Chief Sustainablity Officer",
             "Strategic Master",
             "You can buy up to two assets if they are green or red",
-            "cso",
+            "CSO",
             6
         );
     }   
@@ -174,7 +175,7 @@ export class HeadOfRD extends Character {
             "The Head of R&D",
             "Research Master",
             "Starts with increased card draw and keep limit",
-            "headOfR&D",
+            "HeadRnD",
             7
         );
     }
@@ -189,7 +190,7 @@ export class HeadOfRD extends Character {
     usePassive(player) {
         super.usePassive(player);
         player.maxTempCards = 6;
-        player.maxKeepCards = 3;
+        player.maxKeepCards = 4;
         
     }
 }
@@ -200,7 +201,7 @@ export class Stakeholder extends Character {
             "The Stakeholder",
             "Forced Sale",
             "Can force a player to sell an asset",
-            "stakeholder",
+            "Stakeholder",
             8
         );
     }
