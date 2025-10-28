@@ -1,12 +1,14 @@
 import Asset from './Asset.js';
 import Liablity from './Liablity.js';
 class Player {
-    constructor(name) {
+    constructor(name, id) {
         this.hand = [];
         this.playableAssets = 1;
         this.playableLiabilities = 1;
         this.character = null;
         this.name = name;
+        this.playerID = id;
+        this.serverHandInfo = []; // To store simplified hand info for other players
 
         this.assetList = [];
         this.cash = 0;
@@ -29,15 +31,25 @@ class Player {
     }
 
     positionCardsInHand() {
-        const startX = (window.innerWidth - (this.hand.length * this.cardSpacing)) / 2 
-                        + this.cardSpacing / 2;
-        const y = window.innerHeight - 100; 
+        const liabilities = this.hand.filter(c => c instanceof Liablity).reverse();
+        const assets = this.hand.filter(c => c instanceof Asset).reverse();
 
-        this.hand.forEach((card, index) => {
-            card.setPosition(
-                startX + (index * this.cardSpacing),
-                y
-            );
+        const baseY = window.innerHeight - 150;
+        const spacing = 60; // This is the space between each card.
+
+        const totalAssetsWidth = (assets.length - 1) * spacing;
+        const assetsStartX = window.innerWidth / 2 - totalAssetsWidth - 100;
+
+        assets.forEach((card, i) => {
+            card.setPosition(assetsStartX + i * spacing, baseY);
+        });
+
+        const totalLiabilitiesWidth = (liabilities.length > 0 ? liabilities.length - 1 : 0) * spacing;
+        const liabilitiesStartX = window.innerWidth / 2 + 100 + totalLiabilitiesWidth;
+
+        liabilities.forEach((card, i) => {
+            card.setPosition(liabilitiesStartX - i * spacing, baseY);
+
         });
     }
      positionCardsInHandPicking(){
@@ -129,12 +141,12 @@ class Player {
         return false;
     }
     moveAssetToPile(card) {
-        card.sprite.x = 500-(this.assetList.length * 50);
-        card.sprite.y = window.innerHeight/2;
+        card.sprite.x = window.innerWidth / 2 - 145;
+        card.sprite.y = window.innerHeight / 2 - 50;
     }
     moveLiabilityToPile(card) {
-        card.sprite.x = window.innerWidth-500+(this.assetList.length * 50);
-        card.sprite.y = window.innerHeight/2;
+        card.sprite.x = window.innerWidth / 2 + 145;
+        card.sprite.y = window.innerHeight / 2 - 50;
     }
     addCardToTempHand(card) {
         if (this.tempHand.length < this.maxTempCards) {

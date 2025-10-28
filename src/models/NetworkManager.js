@@ -6,11 +6,12 @@ class NetworkManager {
 
         this.commandList = {
             "DrawCard" : this.drawCard.bind(this),
-            "StartGame" : this.gameManager.messageStartGame.bind(this.gameManager),
-            "SelectCharacter" : this.gameManager.selectCharacter.bind(this.gameManager),
-            "SelectableCharacters": this.gameManager.receiveSelectableCharacters.bind(this.gameManager),
+            "StartGame" : this.gameManager.messageStartGame.bind(this.gameManager),            
             "PlayersInLobby" : this.gameManager.newPlayer.bind(this.gameManager),
-            "SelectCharacterOk" : this.gameManager.characterSelectionOk.bind(this.gameManager),
+            "SelectingCharacters": this.gameManager.receiveSelectableCharacters.bind(this.gameManager),            
+            "SelectedCharacter" : this.gameManager.receiveSelectableCharacters.bind(this.gameManager), 
+            "YouSelectedCharacter": this.gameManager.youSelectedCharacter.bind(this.gameManager),
+            "TurnStarts": this.gameManager.turnStarts.bind(this.gameManager),
         };
 
         this.connect();
@@ -45,9 +46,10 @@ class NetworkManager {
         let invokedCommand = this.commandList[parsedMessage.action];
         if (invokedCommand) {
             invokedCommand(parsedMessage.data);
-            console.log(`parse ${parsedMessage.data}`)
+            //console.log(`parse ${parsedMessage.data}`)
         }
     }
+    
 
     drawCard(data) {
         console.log(data.card_type);
