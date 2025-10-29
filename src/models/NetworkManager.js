@@ -8,7 +8,8 @@ class NetworkManager {
             "DrawCard" : this.drawCard.bind(this),
             "StartGame" : this.gameManager.messageStartGame.bind(this.gameManager),            
             "PlayersInLobby" : this.gameManager.newPlayer.bind(this.gameManager),
-            "SelectingCharacters": this.gameManager.receiveSelectableCharacters.bind(this.gameManager),            
+            "SelectingCharacters": this.gameManager.chairmanSelectCharacter.bind(this.gameManager),
+
             "SelectedCharacter" : this.gameManager.receiveSelectableCharacters.bind(this.gameManager), 
             "YouSelectedCharacter": this.gameManager.youSelectedCharacter.bind(this.gameManager),
             "TurnStarts": this.gameManager.turnStarts.bind(this.gameManager),

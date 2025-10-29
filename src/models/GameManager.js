@@ -1,4 +1,4 @@
-import { Text, Container,Graphics,Assets, Sprite} from "pixi.js";
+import { Text, Container,Graphics,Assets, Sprite } from "pixi.js";
 import { Input,Button } from '@pixi/ui';
 import Player from './Player.js';
 import AssetCards from "./AssetCards.js";
@@ -17,7 +17,7 @@ class GameManager {
         this.currentPlayerIndex = 0;
         this.numPlayers = 4;
         this.username;
-        this.myID = 1;
+        this.myID;
         this.characters = getAllCharacters();
 
         
@@ -34,8 +34,11 @@ class GameManager {
         this.mainContainer = new Container();
         this.pickingContainer = new Container();
         this.chacacterContainer = new Container();
+        this.characterCardsContainer = new Container(); // Container for just the cards
+        this.handContainer = new Container(); // Container for the player's hand
         this.elseTurnContainer = new Container();
         this.draftOverlay = new Graphics();
+        this.draftOverlay.visible = false; // Start with the overlay hidden
         this.statsText = new Text({
             text: '',
             style: {
@@ -45,19 +48,15 @@ class GameManager {
             }
         });
         this.networkManager = new NetworkManager('ws://localhost:3000/websocket', this);
+
+        this.chacacterContainer.addChild(this.characterCardsContainer);
+        this.mainContainer.addChild(this.handContainer);
+        
+        // Enable sorting for the hand container
+        this.handContainer.sortableChildren = true;
     }
 
-    initializePlayers() {
-        // This function might become redundant if players are always initialized from server data
-        // For now, it's kept but its usage might change.
-        for (let i = 0; i < this.numPlayers; i++) {
-            const player = new Player(`Player ${i + 1}`, i); // Assign a default name and ID
-            player.cash = 1;
-            this.players.push(player);
-        }
-    }
-
-    async startGame() {
+    async initDecks() {
         await this.CreateAssetDeck();
         await this.CreateLiabilityDeck();
         await this.nextButton(this.mainContainer);
@@ -87,7 +86,7 @@ class GameManager {
         myInput.onEnter.connect(val => {
             console.log(val);
             this.networkManager.sendCommand("Connect", { "username": val, "channel": "test" });
-            this.username = val; // Temporarily store username as myID until server assigns actual ID
+            this.username = val; 
         });
         myInput.position.set(window.innerWidth / 2 - 100, window.innerHeight / 2 - 20);
 
@@ -114,13 +113,12 @@ class GameManager {
 
         if (player.playerID == this.myID) { // Use player.playerID for comparison
             this.pickingContainer.visible = true;
+            this.handContainer.visible = true; // Make hand visible
             this.elseTurnContainer.visible = false;
-            this.showAssetData(this.mainContainer);
-            this.showCharacterData(this.mainContainer);
-            player.hand.forEach(card => {
-                this.pickingContainer.addChild(card.sprite);
-            });
-            player.positionCardsInHandPicking();
+            this.pickingContainer.addChild(this.handContainer);
+             // Show assets in the picking container
+            
+            player.positionCardsInHand();
         } else {
             this.otherCards();
             this.elseTurnContainer.visible = true;
@@ -134,12 +132,18 @@ class GameManager {
 
     switchToMainPhase() {
         this.currentPhase = 'main';
-        this.lobbyContainer.visible = false;
+        this.handContainer.visible = true;
         this.mainContainer.visible = true;
         this.pickingContainer.visible = false;
         this.chacacterContainer.visible = false;
-        this.elseTurnContainer.visible = false;
+        this.elseTurnContainer.visible = false;   
+        this.showAssetData(this.mainContainer);  
+        this.showCharacterData(this.mainContainer);   
         this.getCurrentPlayer().positionCardsInHand();
+        
+        this.handContainer.sortChildren();
+
+        this.mainContainer.addChild(this.handContainer);
         this.mainContainer.addChild(this.statsText);
         this.updateUI();
     }
@@ -156,7 +160,7 @@ class GameManager {
         this.pickingContainer.visible = false;
         this.elseTurnContainer.visible = false;
         this.lobbyContainer.visible = false;
-
+        
         this.draftOverlay.clear().rect(0, 0, this.app.screen.width, this.app.screen.height).fill({ color: 0x000000, alpha: 0.7 });
         this.chacacterContainer.addChildAt(this.draftOverlay, 0);
         this.draftOverlay.visible = true;
@@ -179,7 +183,7 @@ class GameManager {
         if (this.currentPhase == 'picking') {
             this.statsText.text = `Name: ${currentPlayer.name} = ${currentPlayer.character?.name || 'Error Name'} is picking cards`;
         } else if (this.currentPhase == "main") {
-            this.statsText.text = `assets:${currentPlayer.playableAssets}, liablities: ${currentPlayer.playableLiabilities}`;
+            this.statsText.text = `assets:${currentPlayer.playableAssets}, liablities: ${currentPlayer.playableLiabilities}, cash: ${currentPlayer.cash}`;
         }
 
         this.players.forEach(player => {
@@ -211,7 +215,8 @@ class GameManager {
         assetDeck.setDeckPosition(window.innerWidth / 2 - 150, 70);
 
         assetDeckSprite.on('mousedown', async () => {
-            this.networkManager.sendCommand("DrawCard");
+            this.networkManager.sendCommand("DrawCard", { "card_type": "Asset" });
+            
             const currentPlayer = this.getCurrentPlayer();
             if (currentPlayer.tempHand.length < currentPlayer.maxTempCards) {
                 const card = assetDeck.getRandomCard();
@@ -408,7 +413,6 @@ class GameManager {
         this.currentPlayerIndex = 0;
         const currentPlayer = this.getCurrentPlayer();
         currentPlayer.reveal = true;
-        //currentPlayer.character.usePassive(currentPlayer);
 
         this.switchToPickingPhase();
     }
@@ -430,26 +434,39 @@ class GameManager {
 
         this.elseTurnContainer.addChild(nextButton);
 
+        const othersHand = currentPlayer.othersHand;
+        const assets = othersHand.filter(cardType => cardType === 'Asset');
+        const liabilities = othersHand.filter(cardType => cardType === 'Liability');
+
+        const baseY = window.innerHeight - 150;
+        const spacing = 60; 
+
+        
+        const totalAssetsWidth = (assets.length - 1) * spacing;
+        const assetsStartX = window.innerWidth / 2 - totalAssetsWidth - 100;
         const assetBackTexture = await Assets.load("./assets/asset_back.webp");
-        const liabilityBackTexture = await Assets.load("./liabilities/liability_back.webp");
 
-        const cardSpacing = 200;
-        const startX = (window.innerWidth - (currentPlayer.hand.length * cardSpacing)) / 2 + cardSpacing / 2;
-        const y = window.innerHeight - 100;
-
-        for (const card of currentPlayer.hand) {
-            let backTexture;
-            if (card instanceof Asset) {
-                backTexture = assetBackTexture;
-            } else if (card instanceof Liability) {
-                backTexture = liabilityBackTexture;
-            }
-            const cardBack = new Sprite(backTexture);
+        for (let i = 0; i < assets.length; i++) {
+            const cardBack = new Sprite(assetBackTexture);
             cardBack.scale.set(0.3);
             cardBack.anchor.set(0.5);
-            const index = currentPlayer.hand.indexOf(card);
-            cardBack.x = startX + (index * cardSpacing);
-            cardBack.y = y;
+            cardBack.x = assetsStartX + i * spacing;
+            cardBack.y = baseY;
+            this.elseTurnContainer.addChild(cardBack);
+        }
+
+        
+        const totalLiabilitiesWidth = (liabilities.length > 0 ? liabilities.length - 1 : 0) * spacing;
+        const liabilitiesStartX = window.innerWidth / 2 + 100 + totalLiabilitiesWidth;
+        const liabilityBackTexture = await Assets.load("liabilities/liability_back.webp");
+
+        for (let i = 0; i < liabilities.length; i++) {
+            const cardBackTexture = liabilityBackTexture;
+            const cardBack = new Sprite(cardBackTexture);
+            cardBack.scale.set(0.3);
+            cardBack.anchor.set(0.5);
+            cardBack.x = liabilitiesStartX - i * spacing;
+            cardBack.y = baseY;
             this.elseTurnContainer.addChild(cardBack);
         }
     }
@@ -457,31 +474,28 @@ class GameManager {
     async messageStartGame(data) {
         console.log("Received StartGame data from server:", data);
 
-        this.players = []; // Clear existing players
+        this.players = []; 
         this.myID = data.id;
         let localPlayer = new Player(this.username, data.id);
+        localPlayer.reveal = true;
+        localPlayer.cash = data.cash;
+
         this.players.push(localPlayer);
 
         // Initialize all players from player_info
         for (const player_data of data.player_info) {
             const player = new Player(player_data.name, player_data.id);
             player.cash = player_data.cash;
-            player.serverHandInfo = player_data.hand; // Store simplified hand info for other players
-            
+            player.othersHand = player_data.hand;
             this.players.push(player);
         }
-
-        // Sort players by their server-assigned ID for consistent order
-        this.players.sort((a, b) => a.playerID - b.playerID);
-
+        console.log("starting game players",this.players)
+        
         if (!localPlayer) {
             console.error("Could not find the local player in server data!");
             return;
         }
 
-        this.statsText.text = `${this.players[this.currentPlayerIndex].name} Is Selecting Their Character`;
-
-        // Process local player's hand (actual card objects)
         for (const cardData of data.hand) {
             let newCard;
             if (cardData.card_type == "asset") {
@@ -542,11 +556,12 @@ class GameManager {
             });
 
             localPlayer.addCardToHand(newCard);
-            this.mainContainer.addChild(newCard.sprite);
+            this.handContainer.addChild(newCard.sprite);
         }
 
         localPlayer.positionCardsInHand();
-        await this.startGame();
+        this.handContainer.sortChildren(); // Sort initial hand cards
+        await this.initDecks();
     }
 
     newPlayer(data) {
@@ -556,53 +571,69 @@ class GameManager {
         data.usernames.forEach((username, index) => {
             const player = new Player(username, index); // Assign a temporary ID for lobby display
             //this.players.push(player);
+            this.players.push(player);
         });
     }
 
-    receiveSelectableCharacters(data) {
-        this.chacacterContainer.visible = true;
+    initCharacters(){
+        const totalCharacters = this.faceUpCharacters.length;
+        const spacing = 200;
+        const startX = (window.innerWidth - (totalCharacters * spacing)) / 2;
+
+        this.faceUpCharacters.forEach(async (character, index) => {
+            const texture = await Assets.load(character.texturePath);
+            const sprite = new Sprite(texture);
+            sprite.interactive = true;
+            sprite.buttonMode = true;
+            sprite.scale.set(0.3);
+            sprite.anchor.set(0.5);
+
+            sprite.x = startX + index * spacing;
+            sprite.y = window.innerHeight / 2;
+
+            sprite.on('pointerdown', () => {
+                this.networkManager.sendCommand("SelectCharacter", { "character": character.textureName });
+                console.log(`Selected character: ${character.textureName}`);                
+                this.characterCardsContainer.removeChildren();
+            });
+
+            // Add the sprite to the dedicated card container
+            this.characterCardsContainer.addChild(sprite);
+        });
+    }
+
+    chairmanSelectCharacter(data){
+        const currentPlayer = this.players.find(player => player.playerID === data.chairman_id);
+        const turnOrder = data.turnOrder;
+        this.statsText.text = `${currentPlayer.name} is chosing their characeter`;
+
         console.log("Received selectable characters:", data);
 
-        if (data.pickable_characters != null) {
-            // this.myID is already set to the server-assigned ID in messageStartGame
-            // const allowedNames = data.pickable_characters.characters; // Assuming this is an array of character textureNames
+
+        if(currentPlayer.playerID == this.myID){
+            this.faceUpCharacters = this.characters.filter(character => data.pickable_characters.characters.includes(character.textureName));
+            console.log("Face Up Characters:", this.faceUpCharacters);
+            this.initCharacters();
+
+        }
+    }
+    receiveSelectableCharacters(data) {
+        this.chacacterContainer.visible = true;
+        if(data.currently_picking_id == null){
+            return;
+        }
+        console.log("Received selectable characters:", data);
+        
+        const currentPlayer = this.players.find(player => player.playerID === data.currently_picking_id);
+        this.statsText.text = `${currentPlayer.name} is chosing their characeter`;
+        if (currentPlayer.playerID == this.myID) {
 
             this.faceUpCharacters = this.characters.filter(character => data.pickable_characters.characters.includes(character.textureName));
             console.log("Face Up Characters:", this.faceUpCharacters);
-
-            const totalCharacters = this.faceUpCharacters.length;
-            const spacing = 200;
-            const startX = (window.innerWidth - (totalCharacters * spacing)) / 2;
-
-            this.faceUpCharacters.forEach(async (character, index) => {
-                const texture = await Assets.load(character.texturePath);
-                const sprite = new Sprite(texture);
-                sprite.interactive = true;
-                sprite.buttonMode = true;
-                sprite.scale.set(0.3);
-                sprite.anchor.set(0.5);
-
-                sprite.x = startX + index * spacing;
-                sprite.y = window.innerHeight / 2;
-
-                sprite.on('pointerdown', () => {
-                    this.networkManager.sendCommand("SelectCharacter", { "character": character.textureName });
-                    console.log(`Selected character: ${character.textureName}`);
-                    // The server will confirm the selection, no need to assign locally yet
-                });
-
-                this.chacacterContainer.addChild(sprite);
-            });
-        } else {
-            this.players.forEach(player=>{
-
-                console.log(`data:${data.currenty_piclikng_id} vs player:${player.playerID}`);
+            this.initCharacters();
             
-                if (player.playerID == data.player_id){
-                    console.log(`Found him ${player.name}`);
-                    this.statsText = `${player.name} is chosing their character`;
-                }
-            })
+        } else {
+            
            
             console.log("Not player's turn for character selection.");
         }
@@ -629,14 +660,12 @@ class GameManager {
     }
 
     turnStarts(data) {
-        /*data.player_turn = id
-        player_turn_cash
-        player_character
-        draws_n_cards
-        skipped_characters = list[]*/
-        console.log(this.players)
-        this.statsText.text = `${data.player_character}'s turn`;
+        console.log("Received TurnStart data from server:", data);
 
+        const drawableCards = data.draws_n_cards;
+        const recieveCash = data.player_turn_cash;
+
+        this.statsText.text = `${data.player_character}'s turn`;
         const nextPlayerIndex = this.players.findIndex(p => p.playerID == data.player_turn);
 
         if (nextPlayerIndex !== -1) {
@@ -651,9 +680,12 @@ class GameManager {
 
             currentPlayer.playableAssets = 1;
             currentPlayer.playableLiabilities = 1;
+            currentPlayer.cash += recieveCash;
+            currentPlayer.maxTempCards = drawableCards;
             currentPlayer.reveal = true;
             currentPlayer.tempHand = [];
             this.switchToPickingPhase();
+
         } else {
             console.error(`Player with ID ${data.player_turn} not found.`);
         }

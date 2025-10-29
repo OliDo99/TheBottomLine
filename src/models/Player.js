@@ -8,7 +8,8 @@ class Player {
         this.character = null;
         this.name = name;
         this.playerID = id;
-        this.serverHandInfo = []; // To store simplified hand info for other players
+        this.othersHand = []; // To store simplified hand info for other players
+        this.isChaiman = false;
 
         this.assetList = [];
         this.cash = 0;
@@ -28,6 +29,8 @@ class Player {
 
         this.skipNextTurn = false;
         this.reveal = false;
+
+        this._nextZIndex = 0; // Initialize zIndex counter for cards in hand
     }
 
     positionCardsInHand() {
@@ -52,42 +55,12 @@ class Player {
 
         });
     }
-     positionCardsInHandPicking(){
-        // split hand into liabilities (left) and assets (right), slightly overlapping
-        const liabilities = this.hand.filter(c => c instanceof Liability);
-        const assets = this.hand.filter(c => c instanceof Asset);
-
-        // how much cards overlap (percentage of cardSpacing)
-        const overlapFactor = 0.2; // adjust to increase/decrease overlap
-        const overlap = this.cardSpacing * overlapFactor;
-
-        // centers for the two groups (left / right)
-        const leftCenter = window.innerWidth * 0.25;
-        const rightCenter = window.innerWidth * 0.75;
-
-        // slight vertical offset so the two groups don't sit exactly on top of each other
-        const baseY = window.innerHeight - 100;
-
-        if (liabilities.length > 0) {
-            const totalWidth = (liabilities.length - 1) * overlap;
-            const startX = leftCenter - totalWidth / 2;
-            liabilities.forEach((card, i) => {
-                card.setPosition(startX + i * overlap, baseY);
-            });
-        }
-
-        if (assets.length > 0) {
-            const totalWidth = (assets.length - 1) * overlap;
-            const startX = rightCenter - totalWidth / 2;
-            assets.forEach((card, i) => {
-                card.setPosition(startX + i * overlap, baseY);
-            });
-        }
-    }
 
     addCardToHand(card) {
         this.hand.push(card);
-        card.makePlayable(); // Convert card to playable mode
+        card.makePlayable(); // Convert card to playable mode 
+        // Assign a unique and increasing zIndex to ensure new cards are on top
+        if (card.sprite) card.sprite.zIndex = this._nextZIndex++;
     }
     playLiability(cardIndex) {
         if (this.playableLiabilities <= 0) {
@@ -96,8 +69,8 @@ class Player {
         const card = this.hand[cardIndex];
         if (card instanceof Liability) {
             
-            this.cash += card.gold;
-            this.liabilityList.push(card);
+            this.cash += card.gold; 
+            
             
             this.liabilityList.push(card);
             
