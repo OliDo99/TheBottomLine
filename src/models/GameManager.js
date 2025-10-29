@@ -348,23 +348,23 @@ class GameManager {
 
     showCharacterData(container) {
         this.players.forEach(async player => {
+        const revealedPlayers = this.players.filter(p => p.reveal).sort((a, b) => a.character.order - b.character.order);
+
+        revealedPlayers.forEach(async (player, index) => {
             let texture;
-            if (player.reveal) {
-                texture = await Assets.load(player.character.texturePath);
-            } else {
-                texture = await Assets.load("./miscellaneous/character_back.webp");
-            }
+            texture = await Assets.load(player.character.texturePath);
 
             let characterCard = new Sprite(texture);
-            let y = 50 + this.players.indexOf(player) * 100;
+            let y = 50 + index * 100;
             characterCard.x = window.innerWidth - 100;
             characterCard.y = y;
             characterCard.scale.set(0.15);
             characterCard.anchor.set(0.5);
             characterCard.rotation = 90 * Math.PI / 180;
             container.addChild(characterCard);
-        });
-    }
+        }); 
+    })
+}
 
     async nextButton(container) {
         const currentPlayer = this.getCurrentPlayer();
