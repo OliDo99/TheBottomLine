@@ -1,6 +1,6 @@
 import GeneralCard from './GeneralCard'
 
-class Liablity extends GeneralCard {
+class Liability extends GeneralCard {
     constructor(title, gold, texturePath) {
         super(texturePath);
         this.title = title;
@@ -9,4 +9,4 @@ class Liablity extends GeneralCard {
     }
 }
 
-export default Liablity;
+export default Liability;

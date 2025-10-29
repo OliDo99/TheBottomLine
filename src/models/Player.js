@@ -1,5 +1,5 @@
 import Asset from './Asset.js';
-import Liablity from './Liablity.js';
+import Liability from './Liability.js';
 class Player {
     constructor(name, id) {
         this.hand = [];
@@ -31,7 +31,7 @@ class Player {
     }
 
     positionCardsInHand() {
-        const liabilities = this.hand.filter(c => c instanceof Liablity).reverse();
+        const liabilities = this.hand.filter(c => c instanceof Liability).reverse();
         const assets = this.hand.filter(c => c instanceof Asset).reverse();
 
         const baseY = window.innerHeight - 150;
@@ -54,7 +54,7 @@ class Player {
     }
      positionCardsInHandPicking(){
         // split hand into liabilities (left) and assets (right), slightly overlapping
-        const liabilities = this.hand.filter(c => c instanceof Liablity);
+        const liabilities = this.hand.filter(c => c instanceof Liability);
         const assets = this.hand.filter(c => c instanceof Asset);
 
         // how much cards overlap (percentage of cardSpacing)
@@ -94,7 +94,7 @@ class Player {
             return false;
         }
         const card = this.hand[cardIndex];
-        if (card instanceof Liablity) {
+        if (card instanceof Liability) {
             
             this.cash += card.gold;
             this.liabilityList.push(card);

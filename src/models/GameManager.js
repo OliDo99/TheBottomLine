@@ -2,9 +2,9 @@ import { Text, Container,Graphics,Assets, Sprite} from "pixi.js";
 import { Input,Button } from '@pixi/ui';
 import Player from './Player.js';
 import AssetCards from "./AssetCards.js";
-import LiablityCards from "./LiablityCards.js"
+import LiabilityCards from "./LiabilityCards.js"
 import Asset from './Asset.js';
-import Liability from './Liablity.js';
+import Liability from './Liability.js';
 import { getAllCharacters } from './Characters.js';
 import NetworkManager from "./NetworkManager.js";
 
@@ -260,7 +260,7 @@ class GameManager {
     }
 
     async CreateLiabilityDeck() {
-        const liabilityDeck = new LiablityCards();
+        const liabilityDeck = new LiabilityCards();
         const liabilityDeckSprite = await liabilityDeck.initializeDeckSprite();
         liabilityDeck.setDeckPosition(window.innerWidth / 2 + 150, 70);
 
@@ -594,12 +594,20 @@ class GameManager {
                 this.chacacterContainer.addChild(sprite);
             });
         } else {
+            this.players.forEach(player=>{
+
+                console.log(`data:${data.currenty_piclikng_id} vs player:${player.playerID}`);
+            
+                if (player.playerID == data.player_id){
+                    console.log(`Found him ${player.name}`);
+                    this.statsText = `${player.name} is chosing their character`;
+                }
+            })
+           
             console.log("Not player's turn for character selection.");
         }
 
-        // if (data.chairman_id != null) {
-        //     // Handle chairman ID if needed, but myID should be set from player_info
-        // }
+        
     }
 
     selectCharacter(data) {

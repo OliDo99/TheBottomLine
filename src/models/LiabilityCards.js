@@ -1,8 +1,8 @@
 import { Assets, Sprite } from 'pixi.js';
-import Liablity from './Liablity.js';
+import Liability from './Liability.js';
 import boardgameData from '../../boardgame.json' assert { type: 'json' };
 
-class LiablityCards {
+class LiabilityCards {
     constructor() {
         this.cardTemplates = [];
         this.deckSprite = null;
@@ -10,8 +10,8 @@ class LiablityCards {
     }
 
     initializeDeck() {
-        const liablityCards = boardgameData.deck_list.liability_deck.card_list;        
-        liablityCards.forEach(card=>{
+        const LiabilityCards = boardgameData.deck_list.liability_deck.card_list;        
+        LiabilityCards.forEach(card=>{
             this.cardTemplates.push({
                 title: card.title,
                 gold: card.gold_value,
@@ -27,7 +27,7 @@ class LiablityCards {
     getRandomCard() {
         const randomIndex = Math.floor(Math.random() * this.cardTemplates.length);
         const template = this.cardTemplates[randomIndex];
-        return new Liablity(template.title, template.gold, template.texturePath);
+        return new Liability(template.title, template.gold, template.texturePath);
     }
 
     async initializeDeckSprite() {
@@ -49,4 +49,4 @@ class LiablityCards {
     }
 }
 
-export default LiablityCards;
+export default LiabilityCards;
