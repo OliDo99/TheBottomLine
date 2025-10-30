@@ -56,11 +56,32 @@ class GameManager {
         this.handContainer.sortableChildren = true;
     }
 
-    async initDecks() {
+    async initRound() {
         await this.CreateAssetDeck();
         await this.CreateLiabilityDeck();
         await this.nextButton(this.mainContainer);
-        this.newRound();
+
+        this.currentPhase = 'character';
+        this.chacacterContainer.visible = true;
+        this.mainContainer.visible = false;
+        this.pickingContainer.visible = false;
+        this.elseTurnContainer.visible = false;
+        this.lobbyContainer.visible = false;
+        
+        this.draftOverlay.clear().rect(0, 0, this.app.screen.width, this.app.screen.height).fill({ color: 0x000000, alpha: 0.7 });
+        this.chacacterContainer.addChildAt(this.draftOverlay, 0);
+        this.draftOverlay.visible = true;
+
+        this.chacacterContainer.addChild(this.statsText);
+
+        this.players.forEach(p => {
+            p.character = null;
+            p.reveal = false;
+            p.playableAssets = 1;
+            p.playableLiabilities = 1;
+            p.maxTempCards = 3;
+            p.maxKeepCards = 2;
+        });
     }
 
     getCurrentPlayer() {
@@ -173,31 +194,6 @@ class GameManager {
         this.mainContainer.addChild(this.handContainer);
         this.mainContainer.addChild(this.statsText);
         this.updateUI();
-    }
-
-
-    newRound() {
-        this.currentPhase = 'character';
-        this.chacacterContainer.visible = true;
-        this.mainContainer.visible = false;
-        this.pickingContainer.visible = false;
-        this.elseTurnContainer.visible = false;
-        this.lobbyContainer.visible = false;
-        
-        this.draftOverlay.clear().rect(0, 0, this.app.screen.width, this.app.screen.height).fill({ color: 0x000000, alpha: 0.7 });
-        this.chacacterContainer.addChildAt(this.draftOverlay, 0);
-        this.draftOverlay.visible = true;
-
-        this.chacacterContainer.addChild(this.statsText);
-
-        this.players.forEach(p => {
-            p.character = null;
-            p.reveal = false;
-            p.playableAssets = 1;
-            p.playableLiabilities = 1;
-            p.maxTempCards = 3;
-            p.maxKeepCards = 2;
-        });
     }
 
     updateUI() {
@@ -338,20 +334,6 @@ class GameManager {
         container.addChild(nextButton.view);
     }
 
-    finalizeRound() {
-        this.statsText.text = "Round starting!";
-        this.draftOverlay.visible = false;
-        this.characterSpriteMap.forEach(sprite => sprite.visible = false);
-
-        this.players.sort((a, b) => a.character.order - b.character.order);
-
-        this.currentPlayerIndex = 0;
-        const currentPlayer = this.getCurrentPlayer();
-        currentPlayer.reveal = true;
-
-        this.switchToPickingPhase();
-    }
-
     async otherCards() {
         this.elseTurnContainer.removeChildren();
 
@@ -443,18 +425,12 @@ class GameManager {
             newCard.sprite.on('cardPlayed', () => {
                 const cardIndex = localPlayer.hand.indexOf(newCard);
                 if (cardIndex !== -1) {
-                    if (newCard instanceof Asset) {
-                        if (localPlayer.playAsset(cardIndex)) {
-                            this.mainContainer.removeChild(newCard.sprite);
-                            this.mainContainer.addChild(newCard.sprite);
-                        }
-                    } else if (newCard instanceof Liability) {
-                        if (localPlayer.playLiability(cardIndex)) {
-                            this.mainContainer.removeChild(newCard.sprite);
-                            this.mainContainer.addChild(newCard.sprite);
-                        }
+                    if (newCard instanceof Asset) {                        
+                        this.networkManager.sendCommand("BuyAsset", { card_idx: cardIndex });
+                    } else if (newCard instanceof Liability) {                        
+                        this.networkManager.sendCommand("IssueLiability", { card_idx: cardIndex });
                     }
-                    this.updateUI();
+                    // The server will send back a message to update the UI
                 }
             });
 
@@ -484,7 +460,7 @@ class GameManager {
 
         localPlayer.positionCardsInHand();
         this.handContainer.sortChildren(); // Sort initial hand cards
-        await this.initDecks();
+        await this.initRound();
     }
 
     async youDrewCard(data) {
@@ -514,18 +490,12 @@ class GameManager {
         newCard.sprite.on('cardPlayed', () => {
             const cardIndex = currentPlayer.hand.indexOf(newCard);
             if (cardIndex !== -1) {
-                if (newCard instanceof Asset) {
-                    if (currentPlayer.playAsset(cardIndex)) {
-                        this.mainContainer.removeChild(newCard.sprite);
-                        this.mainContainer.addChild(newCard.sprite);
-                    }
-                } else if (newCard instanceof Liability) {
-                    if (currentPlayer.playLiability(cardIndex)) {
-                        this.mainContainer.removeChild(newCard.sprite);
-                        this.mainContainer.addChild(newCard.sprite);
-                    }
+                if (newCard instanceof Asset) {                    
+                    this.networkManager.sendCommand("BuyAsset", { card_idx: cardIndex });
+                } else if (newCard instanceof Liability) {                    
+                    this.networkManager.sendCommand("IssueLiability", { card_idx: cardIndex });
                 }
-                this.updateUI();
+                // The server will send back a message to update the UI
             }
         });
 
@@ -647,16 +617,6 @@ class GameManager {
 
         
     }
-
-    selectCharacter(data) {
-        // This function might be used to update other players' character selections
-    }
-
-    characterSelectionOk(data) {
-        // This function might be used to signal that character selection is complete
-        this.switchToPickingPhase();
-    }
-
     youSelectedCharacter(data) {
         // This function might be used to confirm your character selection
         const localPlayer = this.players.find(p => p.playerID === this.myID);
@@ -696,6 +656,70 @@ class GameManager {
         } else {
             console.error(`Player with ID ${data.player_turn} not found.`);
         }
+    }
+    youBoughtAsset(data){
+        const player = this.players.find(p => p.playerID === this.myID);
+        if (!player) return;
+
+        const card = player.hand.find(c => c.title === data.asset.title && c.gold === data.asset.gold_value && c.silver === data.asset.silver_value);
+        if (!card) return;
+
+        const cardIndex = player.hand.indexOf(card);
+        if (cardIndex === -1) return;
+
+        player.cash -= card.gold;
+        player.gold += card.gold;
+        player.silver += card.silver;
+        player.assetList.push(card);
+        player.hand.splice(cardIndex, 1);
+        player.playableAssets--;
+        
+
+        player.positionCardsInHand();
+        player.moveAssetToPile(card);
+        this.updateUI();
+    }
+    boughtAsset(data){
+        const player = this.players.find(p => p.playerID === data.player_id);
+        if (!player) return;
+
+        // For other players, we just need to know a card was played.
+        // The server will provide updated hand counts if needed.
+        // Here we can just remove one asset card from their conceptual hand.
+        const assetIndex = player.othersHand.indexOf('Asset');
+        if (assetIndex > -1) {
+            player.othersHand.splice(assetIndex, 1);
+        }
+        this.updateUI();
+    }
+    youIssuedLiability(data){
+        const player = this.players.find(p => p.playerID === this.myID);
+        if (!player) return;
+
+        const card = player.hand.find(c => c.title === data.liability.rfr_type && c.gold === data.liability.value);
+        if (!card) return;
+
+        const cardIndex = player.hand.indexOf(card);
+        if (cardIndex === -1) return;
+
+        player.cash += card.gold;
+        player.liabilityList.push(card);
+        player.hand.splice(cardIndex, 1);
+        player.playableLiabilities--;
+
+        player.positionCardsInHand();
+        player.moveLiabilityToPile(card);
+        this.updateUI();
+    }
+    issuedLiability(data){
+        const player = this.players.find(p => p.playerID === data.player_id);
+        if (!player) return;
+
+        const liabilityIndex = player.othersHand.indexOf('Liability');
+        if (liabilityIndex > -1) {
+            player.othersHand.splice(liabilityIndex, 1);
+        }
+        this.updateUI();
     }
 }
 

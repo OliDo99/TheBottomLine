@@ -5,21 +5,21 @@ class NetworkManager {
         this.gameManager = gameManager;
 
         this.commandList = {
-            "DrawCard" : this.drawCard.bind(this),
             "StartGame" : this.gameManager.messageStartGame.bind(this.gameManager),            
             "PlayersInLobby" : this.gameManager.newPlayer.bind(this.gameManager),
             "SelectingCharacters": this.gameManager.chairmanSelectCharacter.bind(this.gameManager),
             "YouDrewCard": this.gameManager.youDrewCard.bind(this.gameManager),
             "YouPutBackCard": this.gameManager.youPutBackCard.bind(this.gameManager),
-
             "SelectedCharacter" : this.gameManager.receiveSelectableCharacters.bind(this.gameManager), 
             "YouSelectedCharacter": this.gameManager.youSelectedCharacter.bind(this.gameManager),
             "TurnStarts": this.gameManager.turnStarts.bind(this.gameManager),
+            "YouBoughtAsset": this.gameManager.youBoughtAsset.bind(this.gameManager),
+            "BoughtAsset":this.gameManager.boughtAsset.bind(this.gameManager),
+            "YouIssuedLiability":this.gameManager.youIssuedLiability.bind(this.gameManager),
+            "IssuedLiability":this.gameManager.issuedLiability.bind(this.gameManager),
         };
 
         this.connect();
-
-       
     }
 
     connect() {
@@ -51,12 +51,6 @@ class NetworkManager {
             invokedCommand(parsedMessage.data);
             //console.log(`parse ${parsedMessage.data}`)
         }
-    }
-    
-
-    drawCard(data) {
-        console.log(data.card_type);
-        //this.game.DrawCard(1);
     }
 
     sendMessage(data) {

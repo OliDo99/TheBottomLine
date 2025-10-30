@@ -63,53 +63,18 @@ class Player {
         if (card.sprite) card.sprite.zIndex = this._nextZIndex++;
     }
     playLiability(cardIndex) {
-        if (this.playableLiabilities <= 0) {
-            return false;
-        }
         const card = this.hand[cardIndex];
         if (card instanceof Liability) {
-            
-            this.cash += card.gold; 
-            
-            
-            this.liabilityList.push(card);
-            
-            this.hand.splice(cardIndex, 1);
-            this.positionCardsInHand();
-            this.playableLiabilities--;
-
-            this.moveLiabilityToPile(card);
+            // Server-side logic will handle the rest.
             return true;
         }
         return false;
     }
     playAsset(cardIndex) {
-        if (this.playableAssets <= 0) {
-            return false;
-        }
         const card = this.hand[cardIndex];
         if (card instanceof Asset) {
-            
-            if (this.cash >= card.gold) {
-                
-                this.cash -= card.gold;
-                this.gold += card.gold;
-                
-                this.silver += card.silver;
-               
-                this.assetList.push(card);
-                
-                this.hand.splice(cardIndex, 1);
-                this.positionCardsInHand()
-                this.playableAssets--;
-
-
-                this.moveAssetToPile(card);
-
-                return true;
-            } else {
-                return false;
-            }
+            // Server-side logic will handle the rest.
+            return true;
         }
         return false;
     }
