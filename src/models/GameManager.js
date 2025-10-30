@@ -114,11 +114,27 @@ class GameManager {
         if (player.playerID == this.myID) { // Use player.playerID for comparison
             this.pickingContainer.visible = true;
             this.handContainer.visible = true; // Make hand visible
+            this.pickingContainer.removeChildren();
             this.elseTurnContainer.visible = false;
             this.pickingContainer.addChild(this.handContainer);
              // Show assets in the picking container
             
+            // Create and add backdrops for temp cards
+            const cardWidth = 590 * 0.25; // Approximate card width based on sprite scale
+            const cardHeight = 940 * 0.25; // Approximate card height
+            const spacing = 180;
+            const startX = (window.innerWidth - (player.maxTempCards * spacing)) / 2 + spacing / 2;
+            const y = window.innerHeight / 2;
+
+            for (let i = 0; i < player.maxTempCards; i++) {
+                const backdrop = this.createCardBackdrop(startX + (i * spacing), y, cardWidth + 10, cardHeight + 10);
+                this.pickingContainer.addChild(backdrop);
+            }
+
             player.positionCardsInHand();
+
+            this.CreateAssetDeck();
+            this.CreateLiabilityDeck();
         } else {
             this.otherCards();
             this.elseTurnContainer.visible = true;
@@ -128,6 +144,17 @@ class GameManager {
             this.elseTurnContainer.addChild(this.statsText);
         }
         this.updateUI();
+    }
+
+    createCardBackdrop(x, y, width, height) {
+        const backdrop = new Graphics(); // border
+        backdrop.roundRect(0, 0, width, height, 15)
+            .stroke({ width: 4, color: 0xCBC28E }) 
+            .fill({ alpha: 0 }); 
+        backdrop.x = x;
+        backdrop.y = y;
+        backdrop.pivot.set(width / 2, height / 2);
+        return backdrop;
     }
 
     switchToMainPhase() {
@@ -148,10 +175,6 @@ class GameManager {
         this.updateUI();
     }
 
-    nextTurn() {
-        this.networkManager.sendCommand("EndTurn");
-        
-    }
 
     newRound() {
         this.currentPhase = 'character';
@@ -211,54 +234,11 @@ class GameManager {
 
     async CreateAssetDeck() {
         const assetDeck = new AssetCards();
-        const assetDeckSprite = await assetDeck.initializeDeckSprite();
-        assetDeck.setDeckPosition(window.innerWidth / 2 - 150, 70);
-
-        assetDeckSprite.on('mousedown', async () => {
+        const assetDeckSprite = await assetDeck.initializeDeckSprite(); // Keep this to get the sprite
+        assetDeck.setDeckPosition(window.innerWidth / 2 - 150, 70); // Position as before
+    
+        assetDeckSprite.on('mousedown', () => {
             this.networkManager.sendCommand("DrawCard", { "card_type": "Asset" });
-            
-            const currentPlayer = this.getCurrentPlayer();
-            if (currentPlayer.tempHand.length < currentPlayer.maxTempCards) {
-                const card = assetDeck.getRandomCard();
-                await card.initializeSprite();
-
-                card.sprite.on('cardPlayed', () => {
-                    const cardIndex = currentPlayer.hand.indexOf(card);
-                    if (cardIndex !== -1) {
-                        if (currentPlayer.playAsset(cardIndex)) {
-                            this.mainContainer.removeChild(card.sprite);
-                            this.mainContainer.addChild(card.sprite);
-                        }
-                        this.updateUI();
-                    }
-                });
-
-                card.sprite.on('cardDiscarded', (discardedCard) => {
-                    const cardIndex = currentPlayer.tempHand.indexOf(discardedCard);
-                    if (cardIndex !== -1) {
-                        this.pickingContainer.removeChild(discardedCard.sprite);
-                        this.pickingContainer.removeChild(discardedCard.discardButton);
-                        currentPlayer.tempHand.splice(cardIndex, 1);
-
-                        if (currentPlayer.tempHand.length == currentPlayer.maxKeepCards) {
-                            currentPlayer.tempHand.forEach(remainingCard => {
-                                currentPlayer.addCardToHand(remainingCard);
-                                this.mainContainer.addChild(remainingCard.sprite);
-                                this.pickingContainer.removeChild(remainingCard.discardButton);
-                                currentPlayer.tempHand = [];
-                                this.switchToMainPhase();
-                            });
-                        }
-                        currentPlayer.positionCardsInHand();
-                    }
-                });
-                currentPlayer.addCardToTempHand(card);
-                this.pickingContainer.addChild(card.sprite);
-                if (card.discardButton) {
-                    this.pickingContainer.addChild(card.discardButton);
-                }
-                currentPlayer.positionTempCards();
-            }
         });
         this.pickingContainer.addChild(assetDeckSprite);
         return assetDeckSprite;
@@ -266,55 +246,11 @@ class GameManager {
 
     async CreateLiabilityDeck() {
         const liabilityDeck = new LiabilityCards();
-        const liabilityDeckSprite = await liabilityDeck.initializeDeckSprite();
-        liabilityDeck.setDeckPosition(window.innerWidth / 2 + 150, 70);
-
-        liabilityDeckSprite.on('mousedown', async () => {
+        const liabilityDeckSprite = await liabilityDeck.initializeDeckSprite(); // Keep this to get the sprite
+        liabilityDeck.setDeckPosition(window.innerWidth / 2 + 150, 70); // Position as before
+    
+        liabilityDeckSprite.on('mousedown', () => {
             this.networkManager.sendCommand("DrawCard", { "card_type": "Liability" });
-
-            const currentPlayer = this.getCurrentPlayer();
-            if (currentPlayer.tempHand.length < currentPlayer.maxTempCards) {
-                const card = liabilityDeck.getRandomCard();
-                await card.initializeSprite();
-
-                card.sprite.on('cardPlayed', () => {
-                    const cardIndex = currentPlayer.hand.indexOf(card);
-                    if (cardIndex !== -1) {
-                        if (currentPlayer.playLiability(cardIndex)) {
-                            this.mainContainer.removeChild(card.sprite);
-                            this.mainContainer.addChild(card.sprite);
-                        }
-                        this.updateUI();
-                    }
-                });
-
-                card.sprite.on('cardDiscarded', (discardedCard) => {
-                    const cardIndex = currentPlayer.tempHand.indexOf(discardedCard);
-                    if (cardIndex !== -1) {
-                        this.pickingContainer.removeChild(discardedCard.sprite);
-                        this.pickingContainer.removeChild(discardedCard.discardButton);
-                        currentPlayer.tempHand.splice(cardIndex, 1);
-
-                        if (currentPlayer.tempHand.length == currentPlayer.maxKeepCards) {
-                            currentPlayer.tempHand.forEach(remainingCard => {
-                                this.mainContainer.addChild(remainingCard.sprite);
-                                currentPlayer.addCardToHand(remainingCard);
-                                this.pickingContainer.removeChild(remainingCard.discardButton);
-                                currentPlayer.tempHand = [];
-                                this.switchToMainPhase();
-                            });
-                        }
-                        currentPlayer.positionCardsInHand();
-                    }
-                });
-
-                currentPlayer.addCardToTempHand(card);
-                this.pickingContainer.addChild(card.sprite);
-                if (card.discardButton) {
-                    this.pickingContainer.addChild(card.discardButton);
-                }
-                currentPlayer.positionTempCards();
-            }
         });
         this.pickingContainer.addChild(liabilityDeckSprite);
         return liabilityDeckSprite;
@@ -371,36 +307,35 @@ class GameManager {
     })
 }
 
-    async nextButton(container) {
-        const currentPlayer = this.getCurrentPlayer();
+    nextButton(container) {
+        const buttonWidth = 150;
+        const buttonHeight = 50;
 
-        const buttonTex = await Assets.load("./miscellaneous/next.png");
-        const nextButton = new Sprite(buttonTex);
-        nextButton.eventMode = 'static';
-        nextButton.on('pointerdown', () => {
-            if (this.currentPhase === 'picking') {
-                if (currentPlayer.tempHand.length > 0) {
-                    currentPlayer.tempHand.forEach(card => {
-                        currentPlayer.addCardToHand(card);
-                        if (card.discardButton) {
-                            this.pickingContainer.removeChild(card.discardButton);
-                        }
-                    });
-                    currentPlayer.tempHand = [];
-                    currentPlayer.positionCardsInHand();
-                    this.switchToMainPhase();
-                }
-            } else {
-                this.nextTurn();
-            }
+        const buttonContainer = new Container();
+
+        const background = new Graphics()
+            .roundRect(0, 0, buttonWidth, buttonHeight, 15)
+            .fill(0x473f33); 
+        const buttonText = new Text({
+			text: "End Turn",
+			style: {
+				fill: '#000000ff',
+				fontSize: 20,
+				fontFamily: 'MyFont',
+			}
+		});
+        buttonText.anchor.set(0.5);
+        buttonText.position.set(buttonWidth / 2, buttonHeight / 2);
+
+        buttonContainer.addChild(background, buttonText);
+
+        const nextButton = new Button(buttonContainer);
+        nextButton.onPress.connect(() => {
+            this.networkManager.sendCommand("EndTurn");
         });
-        nextButton.x = window.innerWidth - 100;
-        nextButton.y = window.innerHeight - 100;
-        nextButton.anchor.set(0.5);
-        nextButton.width = 80;
-        nextButton.height = 80;
+        nextButton.view.position.set(window.innerWidth - 100 - (buttonWidth / 2), window.innerHeight - 100 - (buttonHeight / 2));
 
-        container.addChild(nextButton);
+        container.addChild(nextButton.view);
     }
 
     finalizeRound() {
@@ -421,18 +356,6 @@ class GameManager {
         this.elseTurnContainer.removeChildren();
 
         const currentPlayer = this.getCurrentPlayer();
-
-        const buttonTex = await Assets.load("./miscellaneous/next.png");
-        const nextButton = new Sprite(buttonTex);
-        nextButton.eventMode = 'static';
-        nextButton.x = window.innerWidth - 100;
-        nextButton.y = window.innerHeight - 100;
-        nextButton.anchor.set(0.5);
-        nextButton.width = 80;
-        nextButton.height = 80;
-        nextButton.on('pointerdown', () => { this.nextTurn(); });
-
-        this.elseTurnContainer.addChild(nextButton);
 
         const othersHand = currentPlayer.othersHand;
         const assets = othersHand.filter(cardType => cardType === 'Asset');
@@ -564,6 +487,89 @@ class GameManager {
         await this.initDecks();
     }
 
+    async youDrewCard(data) {
+        const cardData = data.card;
+        const currentPlayer = this.getCurrentPlayer();
+        let newCard;
+
+        if (cardData.card_type === "asset") {
+            newCard = new Asset(
+                cardData.title,
+                cardData.color,
+                cardData.gold_value,
+                cardData.silver_value,
+                cardData.ability,
+                cardData.image_front_url
+            );
+        } else { // liability
+            newCard = new Liability(
+                cardData.rfr_type,
+                cardData.value,
+                cardData.image_front_url
+            );
+        }
+
+        await newCard.initializeSprite();
+
+        newCard.sprite.on('cardPlayed', () => {
+            const cardIndex = currentPlayer.hand.indexOf(newCard);
+            if (cardIndex !== -1) {
+                if (newCard instanceof Asset) {
+                    if (currentPlayer.playAsset(cardIndex)) {
+                        this.mainContainer.removeChild(newCard.sprite);
+                        this.mainContainer.addChild(newCard.sprite);
+                    }
+                } else if (newCard instanceof Liability) {
+                    if (currentPlayer.playLiability(cardIndex)) {
+                        this.mainContainer.removeChild(newCard.sprite);
+                        this.mainContainer.addChild(newCard.sprite);
+                    }
+                }
+                this.updateUI();
+            }
+        });
+
+        newCard.sprite.on('cardDiscarded', (discardedCard) => {
+            const cardIndex = currentPlayer.tempHand.indexOf(discardedCard);
+            if (cardIndex !== -1) {
+                this.networkManager.sendCommand("PutBackCard", { card_idx: cardIndex });
+                this.pickingContainer.removeChild(discardedCard.sprite);
+                this.pickingContainer.removeChild(discardedCard.discardButton);
+                currentPlayer.tempHand.splice(cardIndex, 1);
+                currentPlayer.positionTempCards();
+
+                if (currentPlayer.tempHand.length === currentPlayer.maxKeepCards) {
+                    currentPlayer.tempHand.forEach(remainingCard => {
+                        currentPlayer.addCardToHand(remainingCard);
+                        this.mainContainer.addChild(remainingCard.sprite);
+                        if (remainingCard.discardButton) {
+                            this.pickingContainer.removeChild(remainingCard.discardButton);
+                        }
+                    });
+                    this.youPutBackCard(); // This will trigger phase switch
+                }
+            }
+        });
+
+        currentPlayer.addCardToTempHand(newCard);
+        this.pickingContainer.addChild(newCard.sprite);
+        if (newCard.discardButton) this.pickingContainer.addChild(newCard.discardButton);
+        currentPlayer.positionTempCards();
+    }
+
+    youPutBackCard(data) {
+        const currentPlayer = this.getCurrentPlayer();
+        // All necessary cards have been put back, now we can move the kept cards to the hand.
+        currentPlayer.tempHand.forEach(card => {
+            currentPlayer.addCardToHand(card);
+            if (card.discardButton) {
+                this.pickingContainer.removeChild(card.discardButton);
+            }
+        });
+        currentPlayer.tempHand = [];
+        this.switchToMainPhase();
+    }
+
     newPlayer(data) {
         this.statsText.text = `${data.usernames.length} / 4`;
         this.players = [];
@@ -578,7 +584,8 @@ class GameManager {
     initCharacters(){
         const totalCharacters = this.faceUpCharacters.length;
         const spacing = 200;
-        const startX = (window.innerWidth - (totalCharacters * spacing)) / 2;
+        
+        const startX = (window.innerWidth - ((totalCharacters - 1) * spacing)) / 2;
 
         this.faceUpCharacters.forEach(async (character, index) => {
             const texture = await Assets.load(character.texturePath);

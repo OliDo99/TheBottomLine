@@ -37,7 +37,7 @@ class Player {
         const liabilities = this.hand.filter(c => c instanceof Liability).reverse();
         const assets = this.hand.filter(c => c instanceof Asset).reverse();
 
-        const baseY = window.innerHeight - 150;
+        const baseY = window.innerHeight - 100;
         const spacing = 60; // This is the space between each card.
 
         const totalAssetsWidth = (assets.length - 1) * spacing;
@@ -145,7 +145,7 @@ class Player {
     }
 
     positionTempCards() {
-        const startX = (window.innerWidth - (this.tempHand.length * this.cardSpacing)) / 2 
+        const startX = (window.innerWidth - (this.maxTempCards * this.cardSpacing)) / 2 
                         + this.cardSpacing / 2;
         const y = window.innerHeight/2; 
 

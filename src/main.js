@@ -34,12 +34,7 @@ import GameManager from "./models/GameManager.js";
 
     app.stage.addChild(obj);
 
-
-    app.stage.addChild(sprites);   
-
-
-
-
+    app.stage.addChild(sprites); 
     
     const gameManager = new GameManager(app);
 
@@ -57,11 +52,7 @@ import GameManager from "./models/GameManager.js";
    
     gameManager.statsText = statsText;
 
-
-
     await gameManager.switchToLobby();
-    
-
 
     sprites.addChild(statsText);
    
@@ -71,7 +62,4 @@ import GameManager from "./models/GameManager.js";
     sprites.addChild(gameManager.elseTurnContainer);
     sprites.addChild(gameManager.lobbyContainer);
     
-   
-
-    //gameManager.updateUI();
 })();

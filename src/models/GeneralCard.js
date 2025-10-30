@@ -14,7 +14,7 @@ class GeneralCard {
         
         texture.scaleMode = 'linear';
         this.sprite = new Sprite(texture);
-        this.sprite.scale.set(0.3);
+        this.sprite.scale.set(0.25);
         this.sprite.anchor.set(0.5);
         
    
