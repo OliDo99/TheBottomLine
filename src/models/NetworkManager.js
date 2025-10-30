@@ -1,9 +1,14 @@
 class NetworkManager {
-    constructor(url, gameManager) {
+    constructor(url) {
         this.url = url;
         this.queue = [];
-        this.gameManager = gameManager;
+        this.gameManager = null;
+        this.commandList = {};
+        this.connect();
+    }
 
+    setGameManager(gameManager) {
+        this.gameManager = gameManager;
         this.commandList = {
             "StartGame" : this.gameManager.messageStartGame.bind(this.gameManager),            
             "PlayersInLobby" : this.gameManager.newPlayer.bind(this.gameManager),
@@ -19,8 +24,6 @@ class NetworkManager {
             "YouIssuedLiability":this.gameManager.youIssuedLiability.bind(this.gameManager),
             "IssuedLiability":this.gameManager.issuedLiability.bind(this.gameManager),
         };
-
-        this.connect();
     }
 
     connect() {

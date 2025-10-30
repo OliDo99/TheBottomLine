@@ -1,7 +1,8 @@
-import { Application, Text, Container,Graphics } from "pixi.js";
-
+import { Application } from "pixi.js";
 import GameManager from "./models/GameManager.js";
-
+import GameState from "./models/GameState.js";
+import UIManager from "./models/UIManager.js";
+import NetworkManager from "./models/NetworkManager.js";
 
 (async () => {
     const app = new Application();
@@ -9,38 +10,18 @@ import GameManager from "./models/GameManager.js";
         resizeTo: window,
         autoDensity: true,
         antialias: true,
-        resolution: window.devicePixelRatio || 1, 
+        resolution: window.devicePixelRatio || 1,
     });
 
     app.canvas.style.position = "absolute";
     document.body.appendChild(app.canvas);
 
-    const gameManager = new GameManager(app);
-    const sprites = new Container();
-    const backGroundGradient = new Graphics().rect(0, 0, window.innerWidth, window.innerHeight).fill(gameManager.getGradient());
-    const statsText = new Text({
-        text: '',
-        style: {
-            fill: '#ffffff',
-            fontSize: 36,
-            fontFamily: 'MyFont',
-        }
-    });
-    statsText.anchor.set(0.5);
-    statsText.position.set(window.innerWidth / 2, 30);
-    
-    app.stage.addChild(backGroundGradient);
-    app.stage.addChild(sprites);
+    const gameState = new GameState();
+    const uiManager = new UIManager(app);
+    const networkManager = new NetworkManager('ws://localhost:3000/websocket');
+    const gameManager = new GameManager(gameState, uiManager, networkManager);
 
-    sprites.addChild(gameManager.chacacterContainer);
-    sprites.addChild(gameManager.pickingContainer);
-    sprites.addChild(gameManager.mainContainer);
-    sprites.addChild(gameManager.elseTurnContainer);
-    sprites.addChild(gameManager.lobbyContainer);
-    
-    gameManager.statsText = statsText;
-    sprites.addChild(statsText);
+    networkManager.setGameManager(gameManager);
 
-    await gameManager.initLobby();
-    
+    gameManager.initLobby();
 })();
