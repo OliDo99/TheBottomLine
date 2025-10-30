@@ -8,7 +8,7 @@ class Player {
         this.character = null;
         this.name = name;
         this.playerID = id;
-        this.othersHand = []; // To store simplified hand info for other players
+        this.othersHand = []; 
         this.isChaiman = false;
 
         this.assetList = [];
@@ -30,7 +30,7 @@ class Player {
         this.skipNextTurn = false;
         this.reveal = false;
 
-        this._nextZIndex = 0; // Initialize zIndex counter for cards in hand
+        this._nextZIndex = 0;
     }
 
     positionCardsInHand() {
